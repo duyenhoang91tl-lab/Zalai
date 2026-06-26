@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Zalo AI Assistant",
+  "version": "5.0.0",
+  "description": "Tích hợp Gemini Nano (Chrome AI) + Google Sheet vào Zalo Web",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "https://chat.zalo.me/*",
+    "https://script.google.com/*",
+    "https://*.up.railway.app/*",
+    "https://*.onrender.com/*"
+  ],
+  "content_scripts": [{
+    "matches": ["https://chat.zalo.me/*"],
+    "js": ["content.js"],
+    "css": ["panel.css"],
+    "run_at": "document_idle"
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": { "48": "icon.png" }
+  }
+}
