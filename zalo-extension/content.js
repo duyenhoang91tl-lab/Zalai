@@ -18,7 +18,6 @@
     'Kcnc/Không hiệu quả', 'Đặt hộ/Sai số', 'Bầu'
   ];
 
-  // ── BUILD PANEL ──
   function buildPanel() {
     if (document.getElementById('ome-zai-panel')) return;
 
@@ -36,52 +35,40 @@
     hdr.className = 'zai-hdr';
     hdr.innerHTML = `<div style="flex:1"><div class="zai-hdr-title">🤖 OME Zalo AI</div><div class="zai-hdr-sub">Tra cứu & gợi ý phản hồi khách</div></div>`;
     const cfgBtn = document.createElement('button');
-    cfgBtn.className = 'zai-cfg-btn';
-    cfgBtn.id = 'zai-cfg-toggle';
-    cfgBtn.title = 'Cài đặt';
-    cfgBtn.textContent = '⚙';
+    cfgBtn.className = 'zai-cfg-btn'; cfgBtn.id = 'zai-cfg-toggle';
+    cfgBtn.title = 'Cài đặt'; cfgBtn.textContent = '⚙';
     hdr.appendChild(cfgBtn);
     panel.appendChild(hdr);
 
     const cfg = document.createElement('div');
-    cfg.className = 'zai-cfg';
-    cfg.id = 'zai-cfg';
-    cfg.style.display = 'none';
-
+    cfg.className = 'zai-cfg'; cfg.id = 'zai-cfg'; cfg.style.display = 'none';
     const lbGas = document.createElement('label');
     lbGas.textContent = 'URL Web App GAS (appweb teamduyen)';
     cfg.appendChild(lbGas);
     const inpGas = document.createElement('input');
-    inpGas.id = 'zai-gas-url';
-    inpGas.type = 'text';
+    inpGas.id = 'zai-gas-url'; inpGas.type = 'text';
     inpGas.placeholder = 'https://script.google.com/macros/s/...';
     cfg.appendChild(inpGas);
-
     const lbKey = document.createElement('label');
     lbKey.textContent = '🔑 Groq API Key (lưu 1 lần dùng chung cả team)';
     cfg.appendChild(lbKey);
     const inpKey = document.createElement('input');
-    inpKey.id = 'zai-gemini-key';
-    inpKey.type = 'text';
+    inpKey.id = 'zai-gemini-key'; inpKey.type = 'text';
     inpKey.placeholder = 'gsk_... (lấy miễn phí tại console.groq.com)';
     cfg.appendChild(inpKey);
-
     const saveBtn = document.createElement('button');
-    saveBtn.className = 'zai-cfg-save';
-    saveBtn.id = 'zai-cfg-save';
+    saveBtn.className = 'zai-cfg-save'; saveBtn.id = 'zai-cfg-save';
     saveBtn.textContent = '💾 Lưu cài đặt';
     cfg.appendChild(saveBtn);
     const hint = document.createElement('div');
     hint.className = 'zai-cfg-hint';
-    hint.textContent = 'Key Groq được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.';
+    hint.textContent = 'Key Groq được lưu vào Google Sheets, dùng chung cho cả team.';
     cfg.appendChild(hint);
     panel.appendChild(cfg);
 
     const body = document.createElement('div');
-    body.className = 'zai-body';
-    body.id = 'zai-body';
+    body.className = 'zai-body'; body.id = 'zai-body';
 
-    // Phone
     const phoneWrap = document.createElement('div');
     const phoneLbl = document.createElement('div');
     phoneLbl.className = 'zai-section-label';
@@ -90,15 +77,12 @@
     const phoneRow = document.createElement('div');
     phoneRow.className = 'zai-phone-row';
     const phoneInp = document.createElement('input');
-    phoneInp.id = 'zai-phone-input';
-    phoneInp.type = 'tel';
+    phoneInp.id = 'zai-phone-input'; phoneInp.type = 'tel';
     phoneInp.placeholder = '0901234567';
     const lookupBtn = document.createElement('button');
     lookupBtn.className = 'zai-btn zai-btn-primary zai-btn-sm';
-    lookupBtn.id = 'zai-lookup-btn';
-    lookupBtn.textContent = 'Tra cứu';
-    phoneRow.appendChild(phoneInp);
-    phoneRow.appendChild(lookupBtn);
+    lookupBtn.id = 'zai-lookup-btn'; lookupBtn.textContent = 'Tra cứu';
+    phoneRow.appendChild(phoneInp); phoneRow.appendChild(lookupBtn);
     phoneWrap.appendChild(phoneRow);
     const autoHint = document.createElement('div');
     autoHint.id = 'zai-auto-hint';
@@ -110,115 +94,113 @@
     custArea.id = 'zai-cust-area';
     body.appendChild(custArea);
 
-    // Update section
     const updateSec = document.createElement('div');
-    updateSec.className = 'zai-update-section';
-    updateSec.id = 'zai-update-section';
+    updateSec.className = 'zai-update-section'; updateSec.id = 'zai-update-section';
     updateSec.style.display = 'none';
     const updateLbl = document.createElement('div');
-    updateLbl.className = 'zai-section-label';
-    updateLbl.style.marginBottom = '6px';
+    updateLbl.className = 'zai-section-label'; updateLbl.style.marginBottom = '6px';
     updateLbl.textContent = '📋 Cập nhật tình trạng CS';
     updateSec.appendChild(updateLbl);
     const statusLbl = document.createElement('label');
-    statusLbl.textContent = 'Tình trạng';
-    updateSec.appendChild(statusLbl);
+    statusLbl.textContent = 'Tình trạng'; updateSec.appendChild(statusLbl);
     const statusSel = document.createElement('select');
     statusSel.id = 'zai-status-sel';
     const defOpt = document.createElement('option');
     defOpt.value = ''; defOpt.textContent = '— Chọn —';
     statusSel.appendChild(defOpt);
     CARE_STATUSES.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s; o.textContent = s;
+      const o = document.createElement('option'); o.value = s; o.textContent = s;
       statusSel.appendChild(o);
     });
     updateSec.appendChild(statusSel);
     const noteLbl = document.createElement('label');
-    noteLbl.textContent = 'Ghi chú';
-    updateSec.appendChild(noteLbl);
+    noteLbl.textContent = 'Ghi chú'; updateSec.appendChild(noteLbl);
     const noteTa = document.createElement('textarea');
-    noteTa.id = 'zai-note-ta';
-    noteTa.placeholder = 'Ghi chú thêm...';
-    noteTa.rows = 2;
+    noteTa.id = 'zai-note-ta'; noteTa.placeholder = 'Ghi chú thêm...'; noteTa.rows = 2;
     updateSec.appendChild(noteTa);
     const saveRow = document.createElement('div');
     saveRow.className = 'zai-save-row';
     const saveStatusBtn = document.createElement('button');
     saveStatusBtn.className = 'zai-btn zai-btn-primary zai-btn-sm';
-    saveStatusBtn.id = 'zai-save-btn';
-    saveStatusBtn.textContent = '💾 Lưu về GSheet';
+    saveStatusBtn.id = 'zai-save-btn'; saveStatusBtn.textContent = '💾 Lưu về GSheet';
     const saveStatusSpan = document.createElement('span');
-    saveStatusSpan.className = 'zai-save-status';
-    saveStatusSpan.id = 'zai-save-status';
-    saveRow.appendChild(saveStatusBtn);
-    saveRow.appendChild(saveStatusSpan);
+    saveStatusSpan.className = 'zai-save-status'; saveStatusSpan.id = 'zai-save-status';
+    saveRow.appendChild(saveStatusBtn); saveRow.appendChild(saveStatusSpan);
     updateSec.appendChild(saveRow);
     body.appendChild(updateSec);
 
-    const hr = document.createElement('hr');
-    hr.className = 'zai-div';
-    body.appendChild(hr);
+    body.appendChild(Object.assign(document.createElement('hr'), { className: 'zai-div' }));
 
-    // AI section
+    // AI SECTION
     const aiWrap = document.createElement('div');
+
+    const tonesDiv = document.createElement('div');
+    tonesDiv.className = 'zai-tones'; tonesDiv.style.marginBottom = '8px';
+    ['Thân thiện', 'Chuyên nghiệp', 'Ngắn gọn', 'Nhiệt tình'].forEach((t, i) => {
+      const tb = document.createElement('button');
+      tb.className = 'zai-tone' + (i === 0 ? ' active' : '');
+      tb.dataset.tone = t; tb.textContent = t;
+      tonesDiv.appendChild(tb);
+    });
+    aiWrap.appendChild(tonesDiv);
+
+    // Nút mở đầu
+    const openBtn = document.createElement('button');
+    openBtn.className = 'zai-btn zai-btn-secondary';
+    openBtn.id = 'zai-open-btn';
+    openBtn.textContent = '💬 Tạo TN mở đầu (dựa lịch sử mua)';
+    openBtn.style.cssText = 'width:100%;margin-bottom:8px';
+    aiWrap.appendChild(openBtn);
+
+    // Ô TN khách + nút lấy tự động
+    const msgHeader = document.createElement('div');
+    msgHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px';
     const msgLbl = document.createElement('div');
-    msgLbl.className = 'zai-section-label';
-    msgLbl.textContent = 'Tin nhắn khách (copy từ Zalo)';
-    aiWrap.appendChild(msgLbl);
+    msgLbl.className = 'zai-section-label'; msgLbl.style.margin = '0';
+    msgLbl.textContent = 'Tin nhắn khách';
+    const grabBtn = document.createElement('button');
+    grabBtn.className = 'zai-btn zai-btn-ghost zai-btn-sm';
+    grabBtn.id = 'zai-grab-btn'; grabBtn.textContent = '📥 Lấy TN';
+    grabBtn.title = 'Tự động lấy tin nhắn cuối của khách';
+    msgHeader.appendChild(msgLbl); msgHeader.appendChild(grabBtn);
+    aiWrap.appendChild(msgHeader);
+
     const msgTa = document.createElement('textarea');
-    msgTa.className = 'zai-msg-area';
-    msgTa.id = 'zai-msg';
-    msgTa.placeholder = 'Dán tin nhắn của khách vào đây...';
+    msgTa.className = 'zai-msg-area'; msgTa.id = 'zai-msg';
+    msgTa.placeholder = 'Dán hoặc nhấn "📥 Lấy TN" để tự điền...';
     aiWrap.appendChild(msgTa);
+
     const ctxLbl = document.createElement('div');
     ctxLbl.style.cssText = 'margin-top:5px;font-size:11px;color:#6b7280';
     ctxLbl.textContent = 'Ngữ cảnh / Sản phẩm (tuỳ chọn)';
     aiWrap.appendChild(ctxLbl);
     const ctxInp = document.createElement('input');
-    ctxInp.className = 'zai-ctx-input';
-    ctxInp.id = 'zai-ctx';
-    ctxInp.placeholder = 'VD: Đang tư vấn kem dưỡng, khách hỏi về giá...';
+    ctxInp.className = 'zai-ctx-input'; ctxInp.id = 'zai-ctx';
+    ctxInp.placeholder = 'VD: khách hỏi về giá, muốn mua thêm...';
     aiWrap.appendChild(ctxInp);
-    const tonesDiv = document.createElement('div');
-    tonesDiv.className = 'zai-tones';
-    tonesDiv.style.marginTop = '8px';
-    ['Thân thiện', 'Chuyên nghiệp', 'Ngắn gọn', 'Nhiệt tình'].forEach((t, i) => {
-      const tb = document.createElement('button');
-      tb.className = 'zai-tone' + (i === 0 ? ' active' : '');
-      tb.dataset.tone = t;
-      tb.textContent = t;
-      tonesDiv.appendChild(tb);
-    });
-    aiWrap.appendChild(tonesDiv);
+
     const genBtn = document.createElement('button');
     genBtn.className = 'zai-btn zai-btn-primary';
-    genBtn.id = 'zai-gen-btn';
-    genBtn.textContent = '✨ Tạo gợi ý AI';
+    genBtn.id = 'zai-gen-btn'; genBtn.textContent = '✨ Tạo gợi ý phản hồi';
     genBtn.style.cssText = 'width:100%;margin-top:8px';
     aiWrap.appendChild(genBtn);
     body.appendChild(aiWrap);
 
-    const sugArea = document.createElement('div');
-    sugArea.id = 'zai-sug-area';
+    const sugArea = document.createElement('div'); sugArea.id = 'zai-sug-area';
     body.appendChild(sugArea);
     const errDiv = document.createElement('div');
-    errDiv.className = 'zai-error';
-    errDiv.id = 'zai-error';
-    errDiv.style.display = 'none';
+    errDiv.className = 'zai-error'; errDiv.id = 'zai-error'; errDiv.style.display = 'none';
     body.appendChild(errDiv);
 
     panel.appendChild(body);
     document.body.appendChild(panel);
 
-    // Events
-    cfgBtn.addEventListener('click', () => {
-      _cfgVisible = !_cfgVisible;
-      cfg.style.display = _cfgVisible ? 'block' : 'none';
-    });
+    cfgBtn.addEventListener('click', () => { _cfgVisible = !_cfgVisible; cfg.style.display = _cfgVisible ? 'block' : 'none'; });
     saveBtn.addEventListener('click', saveConfig);
     lookupBtn.addEventListener('click', doLookup);
     saveStatusBtn.addEventListener('click', doSaveStatus);
+    openBtn.addEventListener('click', doGenerateOpener);
+    grabBtn.addEventListener('click', doGrabMessage);
     genBtn.addEventListener('click', doGenerate);
     tonesDiv.addEventListener('click', (e) => {
       const tb = e.target.closest('.zai-tone');
@@ -252,16 +234,10 @@
     const geminiKey = keyEl ? keyEl.value.trim() : '';
     if (geminiKey) {
       try {
-        const r = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'setSetting', key: 'geminiKey', value: geminiKey }),
-          headers: { 'Content-Type': 'text/plain' }
-        });
+        const r = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'setSetting', key: 'geminiKey', value: geminiKey }), headers: { 'Content-Type': 'text/plain' } });
         const d = await r.json();
-        if (d.ok) {
-          showMsg('zai-save-status', '✓ Đã lưu Groq Key lên GSheet!', 3000);
-          if (keyEl) keyEl.value = '';
-        } else { showError('Lỗi lưu key: ' + JSON.stringify(d)); return; }
+        if (d.ok) { showMsg('zai-save-status', '✓ Đã lưu Groq Key!', 3000); if (keyEl) keyEl.value = ''; }
+        else { showError('Lỗi lưu key: ' + JSON.stringify(d)); return; }
       } catch (e) { showError('Lỗi kết nối GAS: ' + e.message); return; }
     }
     _cfgVisible = false;
@@ -270,53 +246,38 @@
     if (!geminiKey) showMsg('zai-save-status', '✓ Đã lưu cài đặt', 2000);
   }
 
-  // ── EXTRACT PHONE từ text (tên Zalo format "...tên... 09xxxxxxxx") ──
   function extractPhone(text) {
     if (!text) return null;
     const m = text.match(/(0[3-9]\d{8})/);
     return m ? m[1] : null;
   }
 
-  // ── LẤY TÊN CUỘC CHAT HIỆN TẠI từ nhiều nguồn ──
   function getCurrentChatName() {
-    // 1. Placeholder ô nhập tin nhắn: "Nhập @, tin nhắn tới <TÊN>"
-    const selectors = [
+    const inputSels = [
       'div[contenteditable][placeholder*="tin nhắn tới"]',
       'div[contenteditable][data-placeholder*="tin nhắn tới"]',
       '[placeholder*="tin nhắn tới"]',
       '[data-placeholder*="tin nhắn tới"]'
     ];
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        const ph = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || '';
-        const name = ph.replace(/^.*tin nhắn tới\s*/i, '').trim();
-        if (name) return name;
-      }
-    }
-    // 2. Header title (thử nhiều selector)
-    const headerSels = [
-      '.chat-header__title',
-      '[class*="chat-header"] [class*="title"]',
-      '[class*="chatHeader"] [class*="title"]',
-      '[class*="header"] h3',
-      '[class*="header"] h4',
-      '[class*="conversation"] [class*="name"]',
-      '[class*="thread"] [class*="name"]'
-    ];
-    for (const sel of headerSels) {
+    for (const sel of inputSels) {
       try {
         const el = document.querySelector(sel);
-        if (el && el.textContent.trim()) return el.textContent.trim();
+        if (el) {
+          const ph = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || '';
+          const name = ph.replace(/^.*tin nhắn tới\s*/i, '').trim();
+          if (name) return name;
+        }
       } catch(e) {}
+    }
+    const headerSels = ['.chat-header__title','[class*="chat-header"] [class*="title"]','[class*="chatHeader"] [class*="title"]','[class*="header"] h3','[class*="header"] h4','[class*="conversation"] [class*="name"]'];
+    for (const sel of headerSels) {
+      try { const el = document.querySelector(sel); if (el && el.textContent.trim()) return el.textContent.trim(); } catch(e) {}
     }
     return null;
   }
 
-  // ── WATCH — dùng MutationObserver + setInterval song song ──
   function watchZaloChat() {
     let _lastName = '';
-
     function check() {
       const name = getCurrentChatName();
       if (!name || name === _lastName) return;
@@ -333,16 +294,43 @@
         }
       }
     }
-
-    // Observer bắt DOM thay đổi
     const observer = new MutationObserver(check);
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-
-    // Interval dự phòng — kiểm tra mỗi 1.5s khi DOM không thay đổi (VD: chuyển tab)
     setInterval(check, 1500);
   }
 
-  // ── DATA FETCHING ──
+  // Lấy tin nhắn cuối của khách từ DOM Zalo
+  function doGrabMessage() {
+    const msgTa = document.getElementById('zai-msg');
+    const hint  = document.getElementById('zai-auto-hint');
+    const candidateSelectors = [
+      '[class*="message"]:not([class*="owner"]):not([class*="sender"]):not([class*="-me"])',
+      '[class*="chat-item"]:not([class*="owner"]):not([class*="right"]):not([class*="-me"])',
+      '[class*="msg-item"]:not([class*="owner"]):not([class*="right"])',
+      '[class*="message-text"]',
+      '[class*="chat-message"]',
+      '[class*="msg-text"]'
+    ];
+    let lastMsg = '';
+    for (const sel of candidateSelectors) {
+      try {
+        const els = document.querySelectorAll(sel);
+        if (!els.length) continue;
+        for (let i = els.length - 1; i >= 0; i--) {
+          const text = (els[i].innerText || els[i].textContent || '').trim();
+          if (text.length > 2 && !/^\d{1,2}:\d{2}$/.test(text)) { lastMsg = text; break; }
+        }
+        if (lastMsg) break;
+      } catch(e) {}
+    }
+    if (lastMsg) {
+      msgTa.value = lastMsg;
+      if (hint) { hint.textContent = '✓ Đã lấy tin nhắn'; setTimeout(() => { hint.textContent = ''; }, 2500); }
+    } else {
+      showError('Không tìm được tin nhắn. Hãy copy thủ công vào ô bên dưới.');
+    }
+  }
+
   async function fetchAllData() {
     if (!GAS_URL) throw new Error('Chưa cài đặt URL GAS. Nhấn ⚙.');
     const now = Date.now();
@@ -373,7 +361,6 @@
     return s;
   }
 
-  // ── LOOKUP ──
   async function doLookup() {
     const raw = (document.getElementById('zai-phone-input').value || '').trim();
     if (!raw) { showError('Vui lòng nhập số điện thoại.'); return; }
@@ -415,13 +402,9 @@
       updateSec.style.display = 'block';
       if (care && care.status) document.getElementById('zai-status-sel').value = care.status;
       if (care && care.note)   document.getElementById('zai-note-ta').value    = care.note;
-    } catch (e) {
-      area.innerHTML = '';
-      showError(e.message);
-    }
+    } catch (e) { area.innerHTML = ''; showError(e.message); }
   }
 
-  // ── SAVE STATUS ──
   async function doSaveStatus() {
     if (!_currentCustData) { showError('Chưa tra cứu khách nào.'); return; }
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS.'); return; }
@@ -431,92 +414,92 @@
     btn.disabled = true; btn.textContent = 'Đang lưu...';
     try {
       const care = _currentCustData.care || {};
-      const row  = {
-        phone: _currentCustData.phone, status: status || care.status || '',
-        zalo: care.zalo || '', cs: care.cs || '', note,
-        schedules: care.schedules||'', schedGoi: care.schedGoi||'',
-        schedGoiNote: care.schedGoiNote||'', schedSP: care.schedSP||'',
-        schedSPNote: care.schedSPNote||'', schedCS: care.schedCS||'',
-        schedCSNote: care.schedCSNote||'', schedHen: care.schedHen||'',
-        schedHenNote: care.schedHenNote||''
-      };
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'saveSingle', row }),
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      const row  = { phone: _currentCustData.phone, status: status||care.status||'', zalo: care.zalo||'', cs: care.cs||'', note, schedules: care.schedules||'', schedGoi: care.schedGoi||'', schedGoiNote: care.schedGoiNote||'', schedSP: care.schedSP||'', schedSPNote: care.schedSPNote||'', schedCS: care.schedCS||'', schedCSNote: care.schedCSNote||'', schedHen: care.schedHen||'', schedHenNote: care.schedHenNote||'' };
+      const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveSingle', row }), headers: { 'Content-Type': 'text/plain' } });
       const d = await res.json();
-      if (d.ok) {
-        showMsg('zai-save-status', '✓ Đã lưu lên GSheet!', 3000);
-        if (_cache.customers) _cache.customers[_currentCustData.phone] = { ...care, status, note };
-      } else { showError('Lỗi: ' + JSON.stringify(d)); }
+      if (d.ok) { showMsg('zai-save-status', '✓ Đã lưu lên GSheet!', 3000); if (_cache.customers) _cache.customers[_currentCustData.phone] = { ...care, status, note }; }
+      else { showError('Lỗi: ' + JSON.stringify(d)); }
     } catch (e) { showError('Lỗi kết nối: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = '💾 Lưu về GSheet'; }
   }
 
-  // ── AI GENERATE ──
+  function buildCustLines() {
+    if (!_currentCustData) return [];
+    const { name, phone, care, orders } = _currentCustData;
+    const lines = ['Tên: ' + name + ' | SĐT: ' + phone];
+    if (orders && orders.length) {
+      lines.push('Số đơn đã mua: ' + orders.length);
+      const prods = [...new Set(orders.map(o=>o.product).filter(Boolean))].slice(0,5).join(', ');
+      if (prods) lines.push('Sản phẩm đã mua: ' + prods);
+      const last = orders[0];
+      if (last) {
+        const d = last.date ? new Date(last.date).toLocaleDateString('vi-VN') : '';
+        lines.push('Đơn gần nhất: ' + [d, last.product, last.revenue ? Number(last.revenue).toLocaleString('vi-VN')+'đ' : ''].filter(Boolean).join(' - '));
+      }
+    }
+    if (care && care.status) lines.push('Tình trạng CS: ' + care.status);
+    if (care && care.note)   lines.push('Ghi chú: ' + care.note);
+    return lines;
+  }
+
+  async function doGenerateOpener() {
+    if (!GAS_URL) { showError('Chưa cài đặt URL GAS. Nhấn ⚙.'); return; }
+    if (!_currentCustData) { showError('Tra cứu khách trước đã.'); return; }
+    const btn = document.getElementById('zai-open-btn');
+    const sugArea = document.getElementById('zai-sug-area');
+    hideError();
+    btn.disabled = true; btn.textContent = 'AI đang soạn...';
+    sugArea.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang soạn tin mở đầu...</div>';
+    const custLines = buildCustLines();
+    const ctx = (document.getElementById('zai-ctx').value || '').trim();
+    if (ctx) custLines.push('Ngữ cảnh: ' + ctx);
+    const prompt = '[KH] ' + custLines.join(' | ') + '\n[Giọng văn] ' + _activeTone + '\nSoạn 1 tin nhắn Zalo CHỦ ĐỘNG bắt chuyện chăm sóc khách sau mua, dựa vào lịch sử mua hàng trên. Ngắn gọn, tự nhiên, tiếng Việt.';
+    await callAI(prompt, btn, '💬 Tạo TN mở đầu (dựa lịch sử mua)', sugArea);
+  }
+
   async function doGenerate() {
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS. Nhấn ⚙.'); return; }
     const msg = (document.getElementById('zai-msg').value || '').trim();
-    if (!msg) { showError('Vui lòng dán tin nhắn của khách.'); return; }
-    const ctx = (document.getElementById('zai-ctx').value || '').trim();
+    if (!msg) { showError('Chưa có tin nhắn khách. Nhấn 📥 Lấy TN hoặc dán thủ công.'); return; }
     const btn = document.getElementById('zai-gen-btn');
     const sugArea = document.getElementById('zai-sug-area');
     hideError();
     btn.disabled = true; btn.textContent = 'AI đang soạn...';
     sugArea.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tạo gợi ý...</div>';
-    let custLines = [];
-    if (_currentCustData) {
-      const { name, phone, care, orders } = _currentCustData;
-      custLines.push('Tên: ' + name + ' | SĐT: ' + phone);
-      if (orders && orders.length) custLines.push('Số đơn: ' + orders.length);
-      const prods = [...new Set((orders||[]).map(o=>o.product).filter(Boolean))].slice(0,3).join(', ');
-      if (prods) custLines.push('SP đã mua: ' + prods);
-      if (care && care.status) custLines.push('Tình trạng: ' + care.status);
-    }
+    const custLines = buildCustLines();
+    const ctx = (document.getElementById('zai-ctx').value || '').trim();
     if (ctx) custLines.push('Ngữ cảnh: ' + ctx);
-    const prompt =
-      (custLines.length ? '[KH] ' + custLines.join(' | ') + '\n' : '') +
-      '[TN khách] ' + msg + '\n' +
-      '[Giọng văn] ' + _activeTone + '\n' +
-      'Soạn 1 tin nhắn trả lời phù hợp, ngắn gọn, tiếng Việt tự nhiên.';
+    const prompt = (custLines.length ? '[KH] ' + custLines.join(' | ') + '\n' : '') + '[TN khách] ' + msg + '\n[Giọng văn] ' + _activeTone + '\nSoạn 1 tin nhắn trả lời phù hợp, ngắn gọn, tiếng Việt tự nhiên.';
+    await callAI(prompt, btn, '✨ Tạo gợi ý phản hồi', sugArea);
+  }
+
+  async function callAI(prompt, btn, btnLabel, sugArea) {
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'ai', prompt }),
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'ai', prompt }), headers: { 'Content-Type': 'text/plain' } });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'GAS trả về lỗi');
       const text = (data.text || '').trim();
       sugArea.innerHTML = '';
       const sugLbl = document.createElement('div');
       sugLbl.className = 'zai-section-label';
-      sugLbl.textContent = '💡 Gợi ý phản hồi (click để copy)';
+      sugLbl.textContent = '💡 Gợi ý (click để copy)';
       sugArea.appendChild(sugLbl);
       const card = document.createElement('div');
       card.className = 'zai-sug';
       const txt = document.createElement('div');
       txt.innerHTML = escHtml(text).replace(/\n/g, '<br>');
       const badge = document.createElement('span');
-      badge.className = 'zai-copy-badge';
-      badge.textContent = 'Copy';
-      card.appendChild(txt);
-      card.appendChild(badge);
+      badge.className = 'zai-copy-badge'; badge.textContent = 'Copy';
+      card.appendChild(txt); card.appendChild(badge);
       card.addEventListener('click', () => {
         navigator.clipboard.writeText(text).then(() => {
-          badge.textContent = '✓ Đã copy!';
-          badge.classList.add('zai-copied');
+          badge.textContent = '✓ Đã copy!'; badge.classList.add('zai-copied');
           setTimeout(() => { badge.textContent = 'Copy'; badge.classList.remove('zai-copied'); }, 1500);
         });
       });
       sugArea.appendChild(card);
-    } catch (e) {
-      sugArea.innerHTML = '';
-      showError('Lỗi: ' + e.message);
-    } finally {
-      btn.disabled = false; btn.textContent = '✨ Tạo gợi ý AI';
-    }
+    } catch (e) { sugArea.innerHTML = ''; showError('Lỗi: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = btnLabel; }
   }
 
   function showError(msg) { const el = document.getElementById('zai-error'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
