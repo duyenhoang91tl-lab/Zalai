@@ -210,6 +210,20 @@
 #ome-zai-panel .zai-save-row { display: flex !important; gap: 6px !important; align-items: center !important; }
 #ome-zai-panel .zai-save-status { font-size: 11px !important; color: #00b14f !important; }
 
+/* 2-column layout trong update section */
+#ome-zai-panel .zai-field-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 4px !important;
+}
+#ome-zai-panel .zai-field-col {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+#ome-zai-panel .zai-field-col select {
+  width: 100% !important;
+}
+
 #ome-zai-panel .zai-section-label {
   font-weight: 600 !important;
   font-size: 11px !important;
