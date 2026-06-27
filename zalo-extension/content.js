@@ -221,6 +221,7 @@
     if (!p) return '';
     let s = String(p).replace(/\D/g,'');
     if (s.startsWith('84') && s.length===11) s='0'+s.slice(2);
+    if (s.length===9 && /^[3-9]/.test(s)) s='0'+s; // GSheet lưu thiếu số 0 đầu
     return s;
   }
 
