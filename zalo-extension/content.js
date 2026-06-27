@@ -32,14 +32,9 @@
     const panel = document.createElement('div');
     panel.id = 'ome-zai-panel';
 
-    // Header
     const hdr = document.createElement('div');
     hdr.className = 'zai-hdr';
-    hdr.innerHTML = `
-      <div style="flex:1">
-        <div class="zai-hdr-title">🤖 OME Zalo AI</div>
-        <div class="zai-hdr-sub">Tra cứu & gợi ý phản hồi khách</div>
-      </div>`;
+    hdr.innerHTML = `<div style="flex:1"><div class="zai-hdr-title">🤖 OME Zalo AI</div><div class="zai-hdr-sub">Tra cứu & gợi ý phản hồi khách</div></div>`;
     const cfgBtn = document.createElement('button');
     cfgBtn.className = 'zai-cfg-btn';
     cfgBtn.id = 'zai-cfg-toggle';
@@ -48,7 +43,6 @@
     hdr.appendChild(cfgBtn);
     panel.appendChild(hdr);
 
-    // Config section
     const cfg = document.createElement('div');
     cfg.className = 'zai-cfg';
     cfg.id = 'zai-cfg';
@@ -57,7 +51,6 @@
     const lbGas = document.createElement('label');
     lbGas.textContent = 'URL Web App GAS (appweb teamduyen)';
     cfg.appendChild(lbGas);
-
     const inpGas = document.createElement('input');
     inpGas.id = 'zai-gas-url';
     inpGas.type = 'text';
@@ -67,7 +60,6 @@
     const lbKey = document.createElement('label');
     lbKey.textContent = '🔑 Groq API Key (lưu 1 lần dùng chung cả team)';
     cfg.appendChild(lbKey);
-
     const inpKey = document.createElement('input');
     inpKey.id = 'zai-gemini-key';
     inpKey.type = 'text';
@@ -79,25 +71,22 @@
     saveBtn.id = 'zai-cfg-save';
     saveBtn.textContent = '💾 Lưu cài đặt';
     cfg.appendChild(saveBtn);
-
     const hint = document.createElement('div');
     hint.className = 'zai-cfg-hint';
     hint.textContent = 'Key Groq được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.';
     cfg.appendChild(hint);
     panel.appendChild(cfg);
 
-    // Body
     const body = document.createElement('div');
     body.className = 'zai-body';
     body.id = 'zai-body';
 
-    // Phone section
+    // Phone
     const phoneWrap = document.createElement('div');
     const phoneLbl = document.createElement('div');
     phoneLbl.className = 'zai-section-label';
     phoneLbl.textContent = 'Số điện thoại khách';
     phoneWrap.appendChild(phoneLbl);
-
     const phoneRow = document.createElement('div');
     phoneRow.className = 'zai-phone-row';
     const phoneInp = document.createElement('input');
@@ -111,14 +100,12 @@
     phoneRow.appendChild(phoneInp);
     phoneRow.appendChild(lookupBtn);
     phoneWrap.appendChild(phoneRow);
-
     const autoHint = document.createElement('div');
     autoHint.id = 'zai-auto-hint';
     autoHint.style.cssText = 'font-size:10px;color:#00b14f;margin-top:3px';
     phoneWrap.appendChild(autoHint);
     body.appendChild(phoneWrap);
 
-    // Customer area
     const custArea = document.createElement('div');
     custArea.id = 'zai-cust-area';
     body.appendChild(custArea);
@@ -128,22 +115,18 @@
     updateSec.className = 'zai-update-section';
     updateSec.id = 'zai-update-section';
     updateSec.style.display = 'none';
-
     const updateLbl = document.createElement('div');
     updateLbl.className = 'zai-section-label';
     updateLbl.style.marginBottom = '6px';
     updateLbl.textContent = '📋 Cập nhật tình trạng CS';
     updateSec.appendChild(updateLbl);
-
     const statusLbl = document.createElement('label');
     statusLbl.textContent = 'Tình trạng';
     updateSec.appendChild(statusLbl);
-
     const statusSel = document.createElement('select');
     statusSel.id = 'zai-status-sel';
     const defOpt = document.createElement('option');
-    defOpt.value = '';
-    defOpt.textContent = '— Chọn —';
+    defOpt.value = ''; defOpt.textContent = '— Chọn —';
     statusSel.appendChild(defOpt);
     CARE_STATUSES.forEach(s => {
       const o = document.createElement('option');
@@ -151,17 +134,14 @@
       statusSel.appendChild(o);
     });
     updateSec.appendChild(statusSel);
-
     const noteLbl = document.createElement('label');
     noteLbl.textContent = 'Ghi chú';
     updateSec.appendChild(noteLbl);
-
     const noteTa = document.createElement('textarea');
     noteTa.id = 'zai-note-ta';
     noteTa.placeholder = 'Ghi chú thêm...';
     noteTa.rows = 2;
     updateSec.appendChild(noteTa);
-
     const saveRow = document.createElement('div');
     saveRow.className = 'zai-save-row';
     const saveStatusBtn = document.createElement('button');
@@ -176,7 +156,6 @@
     updateSec.appendChild(saveRow);
     body.appendChild(updateSec);
 
-    // Divider
     const hr = document.createElement('hr');
     hr.className = 'zai-div';
     body.appendChild(hr);
@@ -187,24 +166,20 @@
     msgLbl.className = 'zai-section-label';
     msgLbl.textContent = 'Tin nhắn khách (copy từ Zalo)';
     aiWrap.appendChild(msgLbl);
-
     const msgTa = document.createElement('textarea');
     msgTa.className = 'zai-msg-area';
     msgTa.id = 'zai-msg';
     msgTa.placeholder = 'Dán tin nhắn của khách vào đây...';
     aiWrap.appendChild(msgTa);
-
     const ctxLbl = document.createElement('div');
     ctxLbl.style.cssText = 'margin-top:5px;font-size:11px;color:#6b7280';
     ctxLbl.textContent = 'Ngữ cảnh / Sản phẩm (tuỳ chọn)';
     aiWrap.appendChild(ctxLbl);
-
     const ctxInp = document.createElement('input');
     ctxInp.className = 'zai-ctx-input';
     ctxInp.id = 'zai-ctx';
     ctxInp.placeholder = 'VD: Đang tư vấn kem dưỡng, khách hỏi về giá...';
     aiWrap.appendChild(ctxInp);
-
     const tonesDiv = document.createElement('div');
     tonesDiv.className = 'zai-tones';
     tonesDiv.style.marginTop = '8px';
@@ -216,7 +191,6 @@
       tonesDiv.appendChild(tb);
     });
     aiWrap.appendChild(tonesDiv);
-
     const genBtn = document.createElement('button');
     genBtn.className = 'zai-btn zai-btn-primary';
     genBtn.id = 'zai-gen-btn';
@@ -225,11 +199,9 @@
     aiWrap.appendChild(genBtn);
     body.appendChild(aiWrap);
 
-    // Suggestions + error
     const sugArea = document.createElement('div');
     sugArea.id = 'zai-sug-area';
     body.appendChild(sugArea);
-
     const errDiv = document.createElement('div');
     errDiv.className = 'zai-error';
     errDiv.id = 'zai-error';
@@ -239,17 +211,15 @@
     panel.appendChild(body);
     document.body.appendChild(panel);
 
-    // ── EVENT LISTENERS ──
+    // Events
     cfgBtn.addEventListener('click', () => {
       _cfgVisible = !_cfgVisible;
       cfg.style.display = _cfgVisible ? 'block' : 'none';
     });
-
     saveBtn.addEventListener('click', saveConfig);
     lookupBtn.addEventListener('click', doLookup);
     saveStatusBtn.addEventListener('click', doSaveStatus);
     genBtn.addEventListener('click', doGenerate);
-
     tonesDiv.addEventListener('click', (e) => {
       const tb = e.target.closest('.zai-tone');
       if (!tb) return;
@@ -261,10 +231,7 @@
     chrome.storage.local.get(['ome_gas_url'], (res) => {
       GAS_URL = res.ome_gas_url || '';
       if (GAS_URL) inpGas.value = GAS_URL;
-      if (!GAS_URL) {
-        _cfgVisible = true;
-        cfg.style.display = 'block';
-      }
+      if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
     });
   }
 
@@ -281,7 +248,6 @@
     GAS_URL = (gasEl ? gasEl.value.trim() : '');
     if (!GAS_URL) { showError('Vui lòng nhập URL GAS.'); return; }
     chrome.storage.local.set({ ome_gas_url: GAS_URL });
-
     const keyEl = document.getElementById('zai-gemini-key');
     const geminiKey = keyEl ? keyEl.value.trim() : '';
     if (geminiKey) {
@@ -295,35 +261,66 @@
         if (d.ok) {
           showMsg('zai-save-status', '✓ Đã lưu Groq Key lên GSheet!', 3000);
           if (keyEl) keyEl.value = '';
-        } else {
-          showError('Lỗi lưu key: ' + JSON.stringify(d)); return;
-        }
-      } catch (e) {
-        showError('Lỗi kết nối GAS: ' + e.message); return;
-      }
+        } else { showError('Lỗi lưu key: ' + JSON.stringify(d)); return; }
+      } catch (e) { showError('Lỗi kết nối GAS: ' + e.message); return; }
     }
-
     _cfgVisible = false;
     document.getElementById('zai-cfg').style.display = 'none';
     _cache = { customers: null, orders: null, fetchedAt: 0 };
     if (!geminiKey) showMsg('zai-save-status', '✓ Đã lưu cài đặt', 2000);
   }
 
-  // ── AUTO-DETECT PHONE ──
+  // ── EXTRACT PHONE từ text (tên Zalo format "...tên... 09xxxxxxxx") ──
   function extractPhone(text) {
     if (!text) return null;
-    const m = text.match(/(?:^|\D)(0[3-9]\d{8})(?:\D|$)/);
+    const m = text.match(/(0[3-9]\d{8})/);
     return m ? m[1] : null;
   }
 
+  // ── LẤY TÊN CUỘC CHAT HIỆN TẠI từ nhiều nguồn ──
+  function getCurrentChatName() {
+    // 1. Placeholder ô nhập tin nhắn: "Nhập @, tin nhắn tới <TÊN>"
+    const selectors = [
+      'div[contenteditable][placeholder*="tin nhắn tới"]',
+      'div[contenteditable][data-placeholder*="tin nhắn tới"]',
+      '[placeholder*="tin nhắn tới"]',
+      '[data-placeholder*="tin nhắn tới"]'
+    ];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const ph = el.getAttribute('placeholder') || el.getAttribute('data-placeholder') || '';
+        const name = ph.replace(/^.*tin nhắn tới\s*/i, '').trim();
+        if (name) return name;
+      }
+    }
+    // 2. Header title (thử nhiều selector)
+    const headerSels = [
+      '.chat-header__title',
+      '[class*="chat-header"] [class*="title"]',
+      '[class*="chatHeader"] [class*="title"]',
+      '[class*="header"] h3',
+      '[class*="header"] h4',
+      '[class*="conversation"] [class*="name"]',
+      '[class*="thread"] [class*="name"]'
+    ];
+    for (const sel of headerSels) {
+      try {
+        const el = document.querySelector(sel);
+        if (el && el.textContent.trim()) return el.textContent.trim();
+      } catch(e) {}
+    }
+    return null;
+  }
+
+  // ── WATCH — dùng MutationObserver + setInterval song song ──
   function watchZaloChat() {
-    const observer = new MutationObserver(() => {
-      const nameEl = document.querySelector(
-        '[class*="chat-header"] [class*="name"], [class*="conversation-header"] [class*="name"], ' +
-        '[class*="title-chat"] span, [class*="header-chat"] [class*="title"]'
-      );
-      if (!nameEl) return;
-      const name = nameEl.textContent || '';
+    let _lastName = '';
+
+    function check() {
+      const name = getCurrentChatName();
+      if (!name || name === _lastName) return;
+      _lastName = name;
       const phone = extractPhone(name);
       if (phone && phone !== _currentPhone) {
         _currentPhone = phone;
@@ -331,12 +328,18 @@
         if (inp) {
           inp.value = phone;
           const hint = document.getElementById('zai-auto-hint');
-          if (hint) hint.textContent = '✓ Tự động phát hiện: ' + name.trim();
+          if (hint) hint.textContent = '✓ Tự động: ' + name.trim();
           doLookup();
         }
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    // Observer bắt DOM thay đổi
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+    // Interval dự phòng — kiểm tra mỗi 1.5s khi DOM không thay đổi (VD: chuyển tab)
+    setInterval(check, 1500);
   }
 
   // ── DATA FETCHING ──
@@ -385,37 +388,30 @@
       const data = await fetchAllData();
       const care   = data.customers[phone];
       const orders = (data.orders[phone] || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-
       if (!care && !orders.length) {
         area.innerHTML = `<div class="zai-not-found">Không tìm thấy <strong>${escHtml(raw)}</strong>.<br><small>Thử Sync GS trên app trước.</small></div>`;
         return;
       }
-
       const name     = orders.length ? (orders[0].name || raw) : raw;
       const products = [...new Set(orders.map(o => o.product).filter(Boolean))].join(', ');
       const totalRev = orders.reduce((s, o) => s + (parseFloat(o.revenue) || 0), 0);
       _currentCustData = { phone, name, care, orders };
-
       area.innerHTML = `
         <div class="zai-card">
           <div class="zai-card-name">${escHtml(name)} <span style="font-size:11px;font-weight:400;color:#9ca3af">${escHtml(raw)}</span></div>
           <div class="zai-chips">
             ${orders.length ? `<span class="zai-chip">📦 ${orders.length} đơn</span>` : ''}
-            ${totalRev ? `<span class="zai-chip">💰 ${Math.round(totalRev / 1000)}K</span>` : ''}
+            ${totalRev ? `<span class="zai-chip">💰 ${Math.round(totalRev/1000)}K</span>` : ''}
             ${products ? `<span class="zai-chip">🏷 ${escHtml(products)}</span>` : ''}
             ${care && care.status ? `<span class="zai-chip">📋 ${escHtml(care.status)}</span>` : ''}
             ${care && care.cs ? `<span class="zai-chip">👤 CS: ${escHtml(care.cs)}</span>` : ''}
           </div>
           ${care && care.note ? `<div class="zai-card-note">📝 ${escHtml(care.note)}</div>` : ''}
-          ${orders.slice(0, 3).length ? `
-            <div class="zai-card-orders"><strong>Đơn gần nhất:</strong><br>
-              ${orders.slice(0, 3).map(o => {
-                const d = o.date ? new Date(o.date).toLocaleDateString('vi-VN') : '?';
-                return `• ${d} — ${escHtml(o.product || o.productDetail || '?')}${o.revenue ? ' (' + Number(o.revenue).toLocaleString('vi-VN') + 'đ)' : ''}`;
-              }).join('<br>')}
-            </div>` : ''}
+          ${orders.slice(0,3).length ? `<div class="zai-card-orders"><strong>Đơn gần nhất:</strong><br>${orders.slice(0,3).map(o => {
+            const d = o.date ? new Date(o.date).toLocaleDateString('vi-VN') : '?';
+            return `• ${d} — ${escHtml(o.product||o.productDetail||'?')}${o.revenue?' ('+Number(o.revenue).toLocaleString('vi-VN')+'đ)':''}`;
+          }).join('<br>')}</div>` : ''}
         </div>`;
-
       updateSec.style.display = 'block';
       if (care && care.status) document.getElementById('zai-status-sel').value = care.status;
       if (care && care.note)   document.getElementById('zai-note-ta').value    = care.note;
@@ -438,11 +434,11 @@
       const row  = {
         phone: _currentCustData.phone, status: status || care.status || '',
         zalo: care.zalo || '', cs: care.cs || '', note,
-        schedules: care.schedules || '', schedGoi: care.schedGoi || '',
-        schedGoiNote: care.schedGoiNote || '', schedSP: care.schedSP || '',
-        schedSPNote: care.schedSPNote || '', schedCS: care.schedCS || '',
-        schedCSNote: care.schedCSNote || '', schedHen: care.schedHen || '',
-        schedHenNote: care.schedHenNote || ''
+        schedules: care.schedules||'', schedGoi: care.schedGoi||'',
+        schedGoiNote: care.schedGoiNote||'', schedSP: care.schedSP||'',
+        schedSPNote: care.schedSPNote||'', schedCS: care.schedCS||'',
+        schedCSNote: care.schedCSNote||'', schedHen: care.schedHen||'',
+        schedHenNote: care.schedHenNote||''
       };
       const res = await fetch(GAS_URL, {
         method: 'POST',
@@ -453,14 +449,9 @@
       if (d.ok) {
         showMsg('zai-save-status', '✓ Đã lưu lên GSheet!', 3000);
         if (_cache.customers) _cache.customers[_currentCustData.phone] = { ...care, status, note };
-      } else {
-        showError('Lỗi: ' + JSON.stringify(d));
-      }
-    } catch (e) {
-      showError('Lỗi kết nối: ' + e.message);
-    } finally {
-      btn.disabled = false; btn.textContent = '💾 Lưu về GSheet';
-    }
+      } else { showError('Lỗi: ' + JSON.stringify(d)); }
+    } catch (e) { showError('Lỗi kết nối: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '💾 Lưu về GSheet'; }
   }
 
   // ── AI GENERATE ──
@@ -474,26 +465,21 @@
     hideError();
     btn.disabled = true; btn.textContent = 'AI đang soạn...';
     sugArea.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tạo gợi ý...</div>';
-
-    // Gom thông tin khách ngắn gọn
     let custLines = [];
     if (_currentCustData) {
       const { name, phone, care, orders } = _currentCustData;
       custLines.push('Tên: ' + name + ' | SĐT: ' + phone);
       if (orders && orders.length) custLines.push('Số đơn: ' + orders.length);
-      const prods = [...new Set((orders || []).map(o => o.product).filter(Boolean))].slice(0, 3).join(', ');
+      const prods = [...new Set((orders||[]).map(o=>o.product).filter(Boolean))].slice(0,3).join(', ');
       if (prods) custLines.push('SP đã mua: ' + prods);
       if (care && care.status) custLines.push('Tình trạng: ' + care.status);
     }
     if (ctx) custLines.push('Ngữ cảnh: ' + ctx);
-
-    // Prompt ngắn gọn — chỉ yêu cầu 1 tin nhắn
     const prompt =
       (custLines.length ? '[KH] ' + custLines.join(' | ') + '\n' : '') +
       '[TN khách] ' + msg + '\n' +
       '[Giọng văn] ' + _activeTone + '\n' +
       'Soạn 1 tin nhắn trả lời phù hợp, ngắn gọn, tiếng Việt tự nhiên.';
-
     try {
       const res = await fetch(GAS_URL, {
         method: 'POST',
@@ -502,15 +488,12 @@
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'GAS trả về lỗi');
-
       const text = (data.text || '').trim();
       sugArea.innerHTML = '';
-
       const sugLbl = document.createElement('div');
       sugLbl.className = 'zai-section-label';
       sugLbl.textContent = '💡 Gợi ý phản hồi (click để copy)';
       sugArea.appendChild(sugLbl);
-
       const card = document.createElement('div');
       card.className = 'zai-sug';
       const txt = document.createElement('div');
@@ -536,23 +519,10 @@
     }
   }
 
-  function showError(msg) {
-    const el = document.getElementById('zai-error');
-    if (el) { el.textContent = msg; el.style.display = 'block'; }
-  }
-  function hideError() {
-    const el = document.getElementById('zai-error');
-    if (el) el.style.display = 'none';
-  }
-  function showMsg(id, msg, ms) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = msg;
-    if (ms) setTimeout(() => { el.textContent = ''; }, ms);
-  }
-  function escHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
+  function showError(msg) { const el = document.getElementById('zai-error'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
+  function hideError() { const el = document.getElementById('zai-error'); if (el) el.style.display = 'none'; }
+  function showMsg(id, msg, ms) { const el = document.getElementById(id); if (!el) return; el.textContent = msg; if (ms) setTimeout(() => { el.textContent = ''; }, ms); }
+  function escHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function init() { buildPanel(); watchZaloChat(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
