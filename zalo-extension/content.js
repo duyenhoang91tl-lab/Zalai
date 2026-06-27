@@ -1,18 +1,16 @@
-// OME Zalo AI Helper - content script for chat.zalo.me
+// OME Zalo AI Helper - content script v13.0
+// Toi uu: lookup server-side (action=lookup), khong tai 38k ban ghi ve browser
 (function () {
   'use strict';
 
   let GAS_URL = '';
-  let _custCache = null;
-  let _ordCache  = null;
-  let _ordLoading = false;
-  let _cacheAt = 0;
+  let _lookupCache = {}; // phone → {care, orders, ts}
   let _activeTone = 'Thân thiện';
   let _currentPhone = '';
   let _currentCustData = null;
   let _cfgVisible = false;
 
-  const CACHE_TTL = 5 * 60 * 1000;
+  const LOOKUP_TTL = 5 * 60 * 1000; // cache 5 phut moi so
   const CARE_STATUSES = [
     'Chưa liên hệ','Chưa sử dụng','Hẹn gọi lại sau','Đang sd','Đang tạm ngưng',
     'Knm/Máy bận','Cúp ngang','Thuê bao','Phân vân/Tiềm năng','Chốt',
@@ -63,7 +61,6 @@
     addEl(phoneRow, 'button', {className:'zai-btn zai-btn-primary zai-btn-sm', id:'zai-lookup-btn', textContent:'Tra cứu'});
     addEl(body, 'div', {id:'zai-auto-hint', style:'font-size:10px;color:#00b14f;margin-top:3px'});
 
-    // Customer info
     addEl(body, 'div', {id:'zai-cust-area'});
 
     // ── UPDATE SECTION ──
@@ -71,7 +68,6 @@
     upd.style.display = 'none';
     addEl(upd, 'div', {className:'zai-section-label', style:'margin-bottom:8px', textContent:'📋 Cập nhật thông tin CS'});
 
-    // Row: Tình trạng CS + Kết bạn Zalo
     const row1 = addEl(upd, 'div', {className:'zai-field-row'});
     const col1 = addEl(row1, 'div', {className:'zai-field-col'});
     addEl(col1, 'label', {textContent:'Tình trạng CS'});
@@ -84,12 +80,10 @@
     const zaloSel = addEl(col2, 'select', {id:'zai-zalo-sel'});
     ZALO_STATUSES.forEach(s => addEl(zaloSel, 'option', {value:s, textContent:s||'— Chọn —'}));
 
-    // CS chăm sóc (dropdown)
     addEl(upd, 'label', {textContent:'CS chăm sóc'});
     const csSel = addEl(upd, 'select', {id:'zai-cs-sel'});
     CS_NAMES.forEach(s => addEl(csSel, 'option', {value:s, textContent:s||'— Chọn CS —'}));
 
-    // Lịch hẹn
     const row2 = addEl(upd, 'div', {className:'zai-field-row'});
     const col3 = addEl(row2, 'div', {className:'zai-field-col'});
     addEl(col3, 'label', {textContent:'Lịch hẹn'});
@@ -98,11 +92,9 @@
     addEl(col4, 'label', {textContent:'Ghi chú hẹn'});
     addEl(col4, 'input', {id:'zai-hen-note', type:'text', placeholder:'Hẹn gì...'});
 
-    // Ghi chú CS
     addEl(upd, 'label', {textContent:'Ghi chú CS'});
-    const noteTa = addEl(upd, 'textarea', {id:'zai-note-ta', placeholder:'Ghi chú thêm...', rows:2});
+    addEl(upd, 'textarea', {id:'zai-note-ta', placeholder:'Ghi chú thêm...', rows:2});
 
-    // Save row
     const saveRow = addEl(upd, 'div', {className:'zai-save-row'});
     addEl(saveRow, 'button', {className:'zai-btn zai-btn-primary zai-btn-sm', id:'zai-save-btn', textContent:'💾 Lưu về GSheet'});
     addEl(saveRow, 'span', {className:'zai-save-status', id:'zai-save-status'});
@@ -111,7 +103,6 @@
 
     // ── AI SECTION ──
     const aiWrap = addEl(body, 'div', {});
-
     const tonesDiv = addEl(aiWrap, 'div', {className:'zai-tones', style:'margin-bottom:8px'});
     ['Thân thiện','Chuyên nghiệp','Ngắn gọn','Nhiệt tình'].forEach((t,i) => {
       addEl(tonesDiv, 'button', {className:'zai-tone'+(i===0?' active':''), dataset:{tone:t}, textContent:t});
@@ -154,7 +145,6 @@
       GAS_URL = res.ome_gas_url || '';
       if (GAS_URL) inpGas.value = GAS_URL;
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
-      else prefetchCustomers_(); // load dữ liệu ngay khi có URL
     });
   }
 
@@ -191,62 +181,15 @@
     }
     _cfgVisible = false;
     document.getElementById('zai-cfg').style.display = 'none';
-    _custCache = null; _ordCache = null; _cacheAt = 0;
+    _lookupCache = {};
     if (!key) showMsg('zai-save-status','✓ Đã lưu cài đặt',2000);
-    prefetchCustomers_();
-  }
-
-  // ── LOAD: CareData (CS info) + OrderData (khách hàng) song song ──
-  async function prefetchCustomers_() {
-    if (!GAS_URL) return;
-    if (_custCache && _ordCache && Date.now() - _cacheAt < CACHE_TTL) return;
-    // Load CareData (nhỏ, nhanh)
-    loadCareBg_();
-    // Load OrderData (nguồn chính, to hơn)
-    loadOrdersBg_();
-  }
-
-  async function loadCareBg_() {
-    if (_custCache && Date.now() - _cacheAt < CACHE_TTL) return;
-    try {
-      const sep = GAS_URL.includes('?') ? '&' : '?';
-      const r = await fetch(GAS_URL + sep + 'action=customers', {redirect:'follow'});
-      const d = await r.json();
-      const map = {};
-      (d.rows||[]).forEach(r => { if(r.phone) map[normPhone(r.phone)] = r; });
-      _custCache = map;
-      if (!_cacheAt) _cacheAt = Date.now();
-    } catch(e) {}
-  }
-
-  let _ordPromise = null;
-  async function loadOrdersBg_() {
-    if (_ordCache && Date.now() - _cacheAt < CACHE_TTL) return;
-    if (_ordLoading) return _ordPromise;
-    _ordLoading = true;
-    _ordPromise = (async () => {
-      try {
-        const sep = GAS_URL.includes('?') ? '&' : '?';
-        const r = await fetch(GAS_URL + sep + 'action=orders', {redirect:'follow'});
-        const d = await r.json();
-        const map = {};
-        (d.orders||[]).forEach(o => {
-          const p = normPhone(o.phone); if(!p) return;
-          if(!map[p]) map[p] = [];
-          map[p].push(o);
-        });
-        _ordCache = map; _cacheAt = Date.now();
-      } catch(e) {}
-      _ordLoading = false;
-    })();
-    return _ordPromise;
   }
 
   function normPhone(p) {
     if (!p) return '';
     let s = String(p).replace(/\D/g,'');
     if (s.startsWith('84') && s.length===11) s='0'+s.slice(2);
-    if (s.length===9 && /^[3-9]/.test(s)) s='0'+s; // GSheet lưu thiếu số 0 đầu
+    if (s.length===9 && /^[3-9]/.test(s)) s='0'+s;
     return s;
   }
 
@@ -321,7 +264,7 @@
     }
   }
 
-  // ── LOOKUP ──
+  // ── LOOKUP — gọi server-side, cache 5 phút mỗi số ──
   async function doLookup() {
     const raw = (document.getElementById('zai-phone-input').value||'').trim();
     if (!raw) { showError('Vui lòng nhập số điện thoại.'); return; }
@@ -329,46 +272,55 @@
     const phone = normPhone(raw);
     const area   = document.getElementById('zai-cust-area');
     const updSec = document.getElementById('zai-update-section');
-    area.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tra cứu...</div>';
     updSec.style.display = 'none';
     _currentCustData = null;
 
     if (!GAS_URL) { showError('Chưa cài URL GAS. Nhấn ⚙.'); area.innerHTML=''; return; }
 
-    // OrderData là nguồn chính — chờ nếu chưa có
-    if (!_ordCache) {
-      area.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tải dữ liệu đơn hàng lần đầu, vui lòng chờ...</div>';
-      await loadOrdersBg_();
+    // Dung cache neu con han
+    const hit = _lookupCache[phone];
+    if (hit && Date.now() - hit.ts < LOOKUP_TTL) {
+      if (!hit.orders.length && !hit.care) showNotFoundWithForm_(area, updSec, phone, raw);
+      else renderCard_(area, updSec, phone, raw, hit.care, hit.orders);
+      return;
     }
-    // CareData load song song, không cần chờ nếu chưa có
-    if (!_custCache) loadCareBg_();
 
-    const care   = _custCache ? (_custCache[phone]||null) : null;
-    let orders   = (_ordCache&&_ordCache[phone]) ? _ordCache[phone].slice() : [];
-    orders.sort((a,b) => parseDate_(b.date)-parseDate_(a.date));
+    area.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tra cứu...</div>';
 
-    const ordCount = _ordCache ? Object.keys(_ordCache).length : 0;
+    try {
+      const sep = GAS_URL.includes('?') ? '&' : '?';
+      const r = await fetch(
+        GAS_URL + sep + 'action=lookup&phone=' + encodeURIComponent(phone),
+        {redirect:'follow'}
+      );
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
 
-    if (!orders.length && !care) {
-      showNotFoundWithForm_(area, updSec, phone, raw, ordCount);
-    } else {
-      renderCard_(area, updSec, phone, raw, care, orders);
+      const orders = (d.orders||[]).slice().sort((a,b) => parseDate_(b.date)-parseDate_(a.date));
+      _lookupCache[phone] = {care: d.care||null, orders, ts: Date.now()};
+
+      if (!orders.length && !d.care) {
+        showNotFoundWithForm_(area, updSec, phone, raw);
+      } else {
+        renderCard_(area, updSec, phone, raw, d.care||null, orders);
+      }
+    } catch(e) {
+      area.innerHTML = '';
+      showError('Lỗi tra cứu: ' + e.message);
+      showNotFoundWithForm_(area, updSec, phone, raw);
     }
   }
 
-  function showNotFoundWithForm_(area, updSec, phone, raw, ordCount) {
-    const hint = ordCount > 0
-      ? `Đã tải ${ordCount.toLocaleString('vi-VN')} khách từ OrderData — <strong>${escHtml(raw)}</strong> chưa có đơn nào.`
-      : `Chưa load được dữ liệu. Kiểm tra URL GAS và Deploy version mới.`;
-    area.innerHTML = `<div class="zai-not-found">⚠️ ${hint}<br><small>Có thể thêm mới bên dưới.</small></div>`;
+  function showNotFoundWithForm_(area, updSec, phone, raw) {
+    area.innerHTML = `<div class="zai-not-found">⚠️ <strong>${escHtml(raw)}</strong> chưa có trong hệ thống.<br><small>Có thể thêm mới bên dưới.</small></div>`;
     _currentCustData = {phone, name: raw, care: null, orders: []};
     updSec.style.display = 'block';
-    document.getElementById('zai-status-sel').value = '';
-    document.getElementById('zai-zalo-sel').value   = '';
-    document.getElementById('zai-cs-sel').value     = '';
-    document.getElementById('zai-hen-date').value   = '';
-    document.getElementById('zai-hen-note').value   = '';
-    document.getElementById('zai-note-ta').value    = '';
+    clearForm_();
+  }
+
+  function clearForm_() {
+    ['zai-status-sel','zai-zalo-sel','zai-cs-sel','zai-hen-date','zai-hen-note','zai-note-ta']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   }
 
   function renderCard_(area, updSec, phone, raw, care, orders) {
@@ -387,6 +339,7 @@
           ${care&&care.status ? `<span class="zai-chip">📋 ${escHtml(care.status)}</span>` : ''}
           ${care&&care.zalo  ? `<span class="zai-chip">💬 ${escHtml(care.zalo)}</span>` : ''}
           ${care&&care.cs    ? `<span class="zai-chip">👤 ${escHtml(care.cs)}</span>` : ''}
+          ${care&&care.schedHen ? `<span class="zai-chip">📅 ${fmtDate_(care.schedHen)}</span>` : ''}
         </div>
         ${care&&care.note ? `<div class="zai-card-note">📝 ${escHtml(care.note)}</div>` : ''}
         ${orders.slice(0,3).length ? `<div class="zai-card-orders"><strong>Đơn gần nhất:</strong><br>${
@@ -396,7 +349,7 @@
             const sp = (o.product||'') + (o.productDetail?' — '+o.productDetail:'');
             return `• <b>${d}</b> | ${rev}<br>&nbsp;&nbsp;${escHtml(sp)}`;
           }).join('<br>')
-        }</div>` : (orders.length===0 ? '<div class="zai-card-note">⏳ Đang tải đơn hàng...</div>' : '')}
+        }</div>` : ''}
       </div>`;
 
     updSec.style.display = 'block';
@@ -434,7 +387,7 @@
       const d = await res.json();
       if (d.ok) {
         showMsg('zai-save-status','✓ Đã lưu lên GSheet!',3000);
-        if (_custCache) _custCache[_currentCustData.phone] = {...c, status, zalo, cs, note, schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||''};
+        delete _lookupCache[_currentCustData.phone];
       } else { showError('Lỗi: '+JSON.stringify(d)); }
     } catch(e) { showError('Lỗi kết nối: '+e.message); }
     finally { btn.disabled=false; btn.textContent='💾 Lưu về GSheet'; }
