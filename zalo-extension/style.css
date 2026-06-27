@@ -22,7 +22,6 @@
 #ome-zai-panel.open { transform: translateX(0) !important; }
 #ome-zai-panel * { box-sizing: border-box !important; }
 
-/* Toggle button */
 #ome-zai-toggle {
   position: fixed !important;
   right: 0 !important;
@@ -45,7 +44,6 @@
 #ome-zai-toggle:hover { background: #009940 !important; }
 #ome-zai-toggle.shifted { right: 320px !important; }
 
-/* Panel header */
 #ome-zai-panel .zai-hdr {
   background: #00b14f !important;
   color: #ffffff !important;
@@ -68,7 +66,6 @@
 }
 #ome-zai-panel .zai-cfg-btn:hover { background: rgba(255,255,255,.4) !important; }
 
-/* Config section */
 #ome-zai-panel .zai-cfg {
   background: #f0fdf4 !important;
   border-bottom: 1px solid #86efac !important;
@@ -112,15 +109,8 @@
   margin-top: 4px !important;
 }
 #ome-zai-panel .zai-cfg-save:hover { background: #009940 !important; }
+#ome-zai-panel .zai-cfg .zai-cfg-hint { font-size: 10px !important; color: #6b7280 !important; margin-top: 6px !important; background: transparent !important; }
 
-#ome-zai-panel .zai-cfg .zai-cfg-hint {
-  font-size: 10px !important;
-  color: #6b7280 !important;
-  margin-top: 6px !important;
-  background: transparent !important;
-}
-
-/* Body */
 #ome-zai-panel .zai-body {
   flex: 1 !important;
   overflow-y: auto !important;
@@ -132,7 +122,6 @@
   color: #111827 !important;
 }
 
-/* Phone row */
 #ome-zai-panel .zai-phone-row { display: flex !important; gap: 6px !important; }
 #ome-zai-panel .zai-phone-row input {
   flex: 1 !important;
@@ -153,13 +142,31 @@
   cursor: pointer !important;
   font-size: 12px !important;
   font-weight: 600 !important;
+  transition: background .15s !important;
 }
 #ome-zai-panel .zai-btn-primary { background: #00b14f !important; color: #ffffff !important; }
 #ome-zai-panel .zai-btn-primary:hover { background: #009940 !important; }
 #ome-zai-panel .zai-btn-primary:disabled { background: #9ca3af !important; cursor: default !important; }
+
+/* Nút phụ — xanh viền */
+#ome-zai-panel .zai-btn-secondary {
+  background: #ffffff !important;
+  color: #00b14f !important;
+  border: 2px solid #00b14f !important;
+}
+#ome-zai-panel .zai-btn-secondary:hover { background: #f0fdf4 !important; }
+#ome-zai-panel .zai-btn-secondary:disabled { border-color: #9ca3af !important; color: #9ca3af !important; cursor: default !important; }
+
+/* Nút ghost — xám nhẹ */
+#ome-zai-panel .zai-btn-ghost {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+#ome-zai-panel .zai-btn-ghost:hover { background: #e5e7eb !important; }
+
 #ome-zai-panel .zai-btn-sm { padding: 4px 9px !important; font-size: 11px !important; }
 
-/* Customer info card */
 #ome-zai-panel .zai-card {
   background: #f0fdf4 !important;
   border: 1px solid #bbf7d0 !important;
@@ -170,21 +177,11 @@
 }
 #ome-zai-panel .zai-card-name { font-weight: 700 !important; font-size: 13px !important; margin-bottom: 5px !important; color: #111827 !important; }
 #ome-zai-panel .zai-chips { display: flex !important; gap: 4px !important; flex-wrap: wrap !important; margin-bottom: 5px !important; }
-#ome-zai-panel .zai-chip {
-  background: #ffffff !important;
-  border: 1px solid #d1fae5 !important;
-  border-radius: 12px !important;
-  padding: 2px 8px !important;
-  font-size: 11px !important;
-  color: #065f46 !important;
-}
+#ome-zai-panel .zai-chip { background: #ffffff !important; border: 1px solid #d1fae5 !important; border-radius: 12px !important; padding: 2px 8px !important; font-size: 11px !important; color: #065f46 !important; }
 #ome-zai-panel .zai-card-note { color: #6b7280 !important; font-size: 11px !important; }
 #ome-zai-panel .zai-card-orders { margin-top: 6px !important; color: #374151 !important; font-size: 11px !important; }
-
-/* Not found */
 #ome-zai-panel .zai-not-found { color: #6b7280 !important; font-size: 12px !important; text-align: center !important; padding: 10px 0 !important; }
 
-/* Care status update */
 #ome-zai-panel .zai-update-section {
   background: #f9fafb !important;
   border: 1px solid #e5e7eb !important;
@@ -193,14 +190,7 @@
   font-size: 12px !important;
   color: #111827 !important;
 }
-#ome-zai-panel .zai-update-section label {
-  display: block !important;
-  font-weight: 600 !important;
-  color: #374151 !important;
-  margin-bottom: 4px !important;
-  font-size: 11px !important;
-  background: transparent !important;
-}
+#ome-zai-panel .zai-update-section label { display: block !important; font-weight: 600 !important; color: #374151 !important; margin-bottom: 4px !important; font-size: 11px !important; background: transparent !important; }
 #ome-zai-panel .zai-update-section select,
 #ome-zai-panel .zai-update-section textarea,
 #ome-zai-panel .zai-update-section input {
@@ -220,7 +210,20 @@
 #ome-zai-panel .zai-save-row { display: flex !important; gap: 6px !important; align-items: center !important; }
 #ome-zai-panel .zai-save-status { font-size: 11px !important; color: #00b14f !important; }
 
-/* Message + AI */
+/* 2-column layout trong update section */
+#ome-zai-panel .zai-field-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 4px !important;
+}
+#ome-zai-panel .zai-field-col {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+#ome-zai-panel .zai-field-col select {
+  width: 100% !important;
+}
+
 #ome-zai-panel .zai-section-label {
   font-weight: 600 !important;
   font-size: 11px !important;
@@ -272,7 +275,6 @@
 }
 #ome-zai-panel .zai-ctx-input:focus { border-color: #00b14f !important; }
 
-/* Suggestions */
 #ome-zai-panel .zai-sug {
   background: #ffffff !important;
   border: 1px solid #e5e7eb !important;
@@ -287,7 +289,6 @@
   color: #111827 !important;
 }
 #ome-zai-panel .zai-sug:hover { border-color: #00b14f !important; background: #f0fdf4 !important; }
-#ome-zai-panel .zai-sug-num { font-size: 10px !important; font-weight: 700 !important; color: #9ca3af !important; margin-bottom: 4px !important; }
 #ome-zai-panel .zai-copy-badge {
   position: absolute !important;
   top: 7px !important; right: 8px !important;
@@ -302,7 +303,6 @@
 #ome-zai-panel .zai-sug:hover .zai-copy-badge { color: #00b14f !important; border-color: #bbf7d0 !important; background: #fff !important; }
 #ome-zai-panel .zai-copied { color: #00b14f !important; }
 
-/* Loading */
 #ome-zai-panel .zai-loading { display: flex !important; align-items: center !important; gap: 8px !important; color: #9ca3af !important; font-size: 12px !important; padding: 8px 0 !important; }
 #ome-zai-panel .zai-spinner {
   width: 15px !important; height: 15px !important;
@@ -314,7 +314,6 @@
 }
 @keyframes zai-spin { to { transform: rotate(360deg); } }
 
-/* Error */
 #ome-zai-panel .zai-error {
   background: #fef2f2 !important;
   border: 1px solid #fecaca !important;
@@ -323,9 +322,5 @@
   font-size: 11px !important;
   padding: 7px 10px !important;
 }
-
-/* Divider */
 #ome-zai-panel .zai-div { border: none !important; border-top: 1px solid #f3f4f6 !important; margin: 2px 0 !important; }
-
-/* Auto-hint */
 #ome-zai-panel #zai-auto-hint { font-size: 10px !important; color: #00b14f !important; margin-top: 3px !important; }
