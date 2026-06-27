@@ -65,13 +65,13 @@
     cfg.appendChild(inpGas);
 
     const lbKey = document.createElement('label');
-    lbKey.textContent = '🔑 Gemini API Key (lưu 1 lần dùng chung cả team)';
+    lbKey.textContent = '🔑 Groq API Key (lưu 1 lần dùng chung cả team)';
     cfg.appendChild(lbKey);
 
     const inpKey = document.createElement('input');
     inpKey.id = 'zai-gemini-key';
     inpKey.type = 'text';
-    inpKey.placeholder = 'AIzaSy... (lấy miễn phí tại aistudio.google.com)';
+    inpKey.placeholder = 'gsk_... (lấy miễn phí tại console.groq.com)';
     cfg.appendChild(inpKey);
 
     const saveBtn = document.createElement('button');
@@ -82,7 +82,7 @@
 
     const hint = document.createElement('div');
     hint.className = 'zai-cfg-hint';
-    hint.textContent = 'Key Gemini được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.';
+    hint.textContent = 'Key Groq được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.';
     cfg.appendChild(hint);
     panel.appendChild(cfg);
 
@@ -293,7 +293,7 @@
         });
         const d = await r.json();
         if (d.ok) {
-          showMsg('zai-save-status', '✓ Đã lưu Gemini Key lên GSheet!', 3000);
+          showMsg('zai-save-status', '✓ Đã lưu Groq Key lên GSheet!', 3000);
           if (keyEl) keyEl.value = '';
         } else {
           showError('Lỗi lưu key: ' + JSON.stringify(d)); return;
@@ -475,27 +475,24 @@
     btn.disabled = true; btn.textContent = 'AI đang soạn...';
     sugArea.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tạo gợi ý...</div>';
 
+    // Gom thông tin khách ngắn gọn
     let custLines = [];
     if (_currentCustData) {
       const { name, phone, care, orders } = _currentCustData;
-      custLines.push('Tên khách: ' + name, 'SĐT: ' + phone);
-      if (orders && orders.length) custLines.push('Số đơn đã mua: ' + orders.length);
-      const prods = [...new Set((orders || []).map(o => o.product).filter(Boolean))].join(', ');
-      if (prods) custLines.push('Sản phẩm đã mua: ' + prods);
-      if (care && care.status) custLines.push('Tình trạng CS: ' + care.status);
-      if (care && care.note)   custLines.push('Ghi chú CS: ' + care.note);
-      const last = (orders || []).slice(0, 2).map(o =>
-        `${o.date ? new Date(o.date).toLocaleDateString('vi-VN') : ''} ${o.product || ''} ${o.revenue ? '(' + Number(o.revenue).toLocaleString('vi-VN') + 'đ)' : ''}`.trim()
-      ).join(', ');
-      if (last) custLines.push('Đơn gần nhất: ' + last);
+      custLines.push('Tên: ' + name + ' | SĐT: ' + phone);
+      if (orders && orders.length) custLines.push('Số đơn: ' + orders.length);
+      const prods = [...new Set((orders || []).map(o => o.product).filter(Boolean))].slice(0, 3).join(', ');
+      if (prods) custLines.push('SP đã mua: ' + prods);
+      if (care && care.status) custLines.push('Tình trạng: ' + care.status);
     }
-    if (ctx) custLines.push('Ngữ cảnh bổ sung: ' + ctx);
+    if (ctx) custLines.push('Ngữ cảnh: ' + ctx);
 
-    const prompt = `Bạn là nhân viên chăm sóc khách hàng chuyên nghiệp của shop bán lẻ Việt Nam.\n` +
-      (custLines.length ? 'Thông tin khách hàng:\n' + custLines.join('\n') + '\n\n' : '') +
-      `Tin nhắn khách gửi: "${msg}"\n\n` +
-      `Hãy viết 3 phiên bản phản hồi cho khách, giọng văn ${_activeTone.toLowerCase()}, bằng tiếng Việt tự nhiên, phù hợp nhắn qua Zalo.\n` +
-      `Mỗi phiên bản trên 1 dòng riêng, bắt đầu bằng "1.", "2.", "3.". Không giải thích thêm.`;
+    // Prompt ngắn gọn — chỉ yêu cầu 1 tin nhắn
+    const prompt =
+      (custLines.length ? '[KH] ' + custLines.join(' | ') + '\n' : '') +
+      '[TN khách] ' + msg + '\n' +
+      '[Giọng văn] ' + _activeTone + '\n' +
+      'Soạn 1 tin nhắn trả lời phù hợp, ngắn gọn, tiếng Việt tự nhiên.';
 
     try {
       const res = await fetch(GAS_URL, {
@@ -506,39 +503,31 @@
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'GAS trả về lỗi');
 
-      const text = data.text || '';
-      const sugs = text.split(/\n(?=\d+\.)/).map(s => s.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
-      if (!sugs.length) sugs.push(text.trim());
-
+      const text = (data.text || '').trim();
       sugArea.innerHTML = '';
+
       const sugLbl = document.createElement('div');
       sugLbl.className = 'zai-section-label';
       sugLbl.textContent = '💡 Gợi ý phản hồi (click để copy)';
       sugArea.appendChild(sugLbl);
 
-      sugs.forEach((s, i) => {
-        const card = document.createElement('div');
-        card.className = 'zai-sug';
-        const num = document.createElement('div');
-        num.className = 'zai-sug-num';
-        num.textContent = 'Phương án ' + (i + 1);
-        const txt = document.createElement('div');
-        txt.innerHTML = escHtml(s).replace(/\n/g, '<br>');
-        const badge = document.createElement('span');
-        badge.className = 'zai-copy-badge';
-        badge.textContent = 'Copy';
-        card.appendChild(num);
-        card.appendChild(txt);
-        card.appendChild(badge);
-        card.addEventListener('click', () => {
-          navigator.clipboard.writeText(s).then(() => {
-            badge.textContent = '✓ Đã copy!';
-            badge.classList.add('zai-copied');
-            setTimeout(() => { badge.textContent = 'Copy'; badge.classList.remove('zai-copied'); }, 1500);
-          });
+      const card = document.createElement('div');
+      card.className = 'zai-sug';
+      const txt = document.createElement('div');
+      txt.innerHTML = escHtml(text).replace(/\n/g, '<br>');
+      const badge = document.createElement('span');
+      badge.className = 'zai-copy-badge';
+      badge.textContent = 'Copy';
+      card.appendChild(txt);
+      card.appendChild(badge);
+      card.addEventListener('click', () => {
+        navigator.clipboard.writeText(text).then(() => {
+          badge.textContent = '✓ Đã copy!';
+          badge.classList.add('zai-copied');
+          setTimeout(() => { badge.textContent = 'Copy'; badge.classList.remove('zai-copied'); }, 1500);
         });
-        sugArea.appendChild(card);
       });
+      sugArea.appendChild(card);
     } catch (e) {
       sugArea.innerHTML = '';
       showError('Lỗi: ' + e.message);
