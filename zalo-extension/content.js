@@ -89,7 +89,7 @@
 
     // Ghi chú
     addEl(upd, 'label', {textContent:'Ghi chú'});
-    const noteTa = addEl(upd, 'textarea', {id:'zai-note-ta', placeholder:'Ghi chú thêm...', rows:2});
+    addEl(upd, 'textarea', {id:'zai-note-ta', placeholder:'Ghi chú thêm...', rows:2});
 
     // Save row
     const saveRow = addEl(upd, 'div', {className:'zai-save-row'});
@@ -143,7 +143,7 @@
       GAS_URL = res.ome_gas_url || '';
       if (GAS_URL) inpGas.value = GAS_URL;
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
-      else prefetchCustomers_(); // load customers ngay khi có URL
+      else prefetchCustomers_();
     });
   }
 
@@ -185,7 +185,6 @@
     prefetchCustomers_();
   }
 
-  // ── LOAD NHANH: chỉ fetch customers trước ──
   async function prefetchCustomers_() {
     if (!GAS_URL) return;
     if (_custCache && Date.now() - _cacheAt < CACHE_TTL) return;
@@ -196,7 +195,6 @@
       const map = {};
       (d.rows||[]).forEach(r => { if(r.phone) map[normPhone(r.phone)] = r; });
       _custCache = map; _cacheAt = Date.now();
-      // load orders ngầm sau
       loadOrdersBg_();
     } catch(e) {}
   }
@@ -309,20 +307,17 @@
     updSec.style.display = 'none';
     _currentCustData = null;
 
-    // Đảm bảo có custCache
     if (!_custCache) {
       if (!GAS_URL) { showError('Chưa cài URL GAS. Nhấn ⚙.'); area.innerHTML=''; return; }
       await prefetchCustomers_();
     }
 
     const care = _custCache ? _custCache[phone] : null;
-
-    // Nếu orders chưa có, hiện thông tin cơ bản trước rồi load orders ngầm
     let orders = _ordCache ? (_ordCache[phone]||[]) : [];
     orders = orders.slice().sort((a,b) => parseDate_(b.date)-parseDate_(a.date));
+    const custCount = _custCache ? Object.keys(_custCache).length : 0;
 
     if (!care && !orders.length && !_ordCache) {
-      // Chưa có orders — vẫn hiện care data, load orders ngầm
       if (care) {
         renderCard_(area, updSec, phone, raw, care, []);
         loadOrdersBg_().then(() => {
@@ -330,21 +325,33 @@
           renderCard_(area, updSec, phone, raw, care, ords.slice().sort((a,b)=>parseDate_(b.date)-parseDate_(a.date)));
         });
       } else {
-        // Chưa có gì — chờ orders
         area.innerHTML = '<div class="zai-loading"><div class="zai-spinner"></div>Đang tải đơn hàng...</div>';
         await loadOrdersBg_();
         const ords = (_ordCache&&_ordCache[phone])||[];
         if (!care && !ords.length) {
-          area.innerHTML = `<div class="zai-not-found">Không tìm thấy <strong>${escHtml(raw)}</strong>.<br><small>Thử Sync GS trên app trước.</small></div>`;
+          showNotFoundWithForm_(area, updSec, phone, raw, custCount);
           return;
         }
         renderCard_(area, updSec, phone, raw, care, ords.slice().sort((a,b)=>parseDate_(b.date)-parseDate_(a.date)));
       }
     } else if (!care && !orders.length) {
-      area.innerHTML = `<div class="zai-not-found">Không tìm thấy <strong>${escHtml(raw)}</strong>.<br><small>Thử Sync GS trên app trước.</small></div>`;
+      showNotFoundWithForm_(area, updSec, phone, raw, custCount);
     } else {
       renderCard_(area, updSec, phone, raw, care, orders);
     }
+  }
+
+  function showNotFoundWithForm_(area, updSec, phone, raw, custCount) {
+    const hint = custCount > 0
+      ? `Đã load ${custCount} khách — <strong>${escHtml(raw)}</strong> chưa có trong GSheet.`
+      : `Chưa load được dữ liệu. Kiểm tra URL GAS và Deploy version mới.`;
+    area.innerHTML = `<div class="zai-not-found">⚠️ ${hint}<br><small>Có thể thêm mới bên dưới.</small></div>`;
+    _currentCustData = {phone, name: raw, care: null, orders: []};
+    updSec.style.display = 'block';
+    document.getElementById('zai-status-sel').value = '';
+    document.getElementById('zai-zalo-sel').value   = '';
+    document.getElementById('zai-cs-inp').value     = '';
+    document.getElementById('zai-note-ta').value    = '';
   }
 
   function renderCard_(area, updSec, phone, raw, care, orders) {
@@ -381,6 +388,11 @@
       document.getElementById('zai-zalo-sel').value   = care.zalo||'';
       document.getElementById('zai-cs-inp').value     = care.cs||'';
       document.getElementById('zai-note-ta').value    = care.note||'';
+    } else {
+      document.getElementById('zai-status-sel').value = '';
+      document.getElementById('zai-zalo-sel').value   = '';
+      document.getElementById('zai-cs-inp').value     = '';
+      document.getElementById('zai-note-ta').value    = '';
     }
   }
 
