@@ -26,95 +26,244 @@
     toggle.id = 'ome-zai-toggle';
     toggle.title = 'OME Zalo AI';
     toggle.textContent = '🤖 AI';
-    toggle.onclick = () => togglePanel();
+    toggle.addEventListener('click', togglePanel);
     document.body.appendChild(toggle);
 
     const panel = document.createElement('div');
     panel.id = 'ome-zai-panel';
-    panel.innerHTML = `
-      <div class="zai-hdr">
-        <div>
-          <div class="zai-hdr-title">🤖 OME Zalo AI</div>
-          <div class="zai-hdr-sub">Tra cứu & gợi ý phản hồi khách</div>
-        </div>
-        <button class="zai-cfg-btn" id="zai-cfg-toggle" title="Cài đặt">⚙</button>
-      </div>
 
-      <!-- Config -->
-      <div class="zai-cfg" id="zai-cfg" style="display:none">
-        <label>URL Web App GAS (appweb teamduyen)</label>
-        <input id="zai-gas-url" placeholder="https://script.google.com/macros/s/..." type="text">
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'zai-hdr';
+    hdr.innerHTML = `
+      <div style="flex:1">
+        <div class="zai-hdr-title">🤖 OME Zalo AI</div>
+        <div class="zai-hdr-sub">Tra cứu & gợi ý phản hồi khách</div>
+      </div>`;
+    const cfgBtn = document.createElement('button');
+    cfgBtn.className = 'zai-cfg-btn';
+    cfgBtn.id = 'zai-cfg-toggle';
+    cfgBtn.title = 'Cài đặt';
+    cfgBtn.textContent = '⚙';
+    hdr.appendChild(cfgBtn);
+    panel.appendChild(hdr);
 
-        <label>🔑 Gemini API Key (lưu 1 lần dùng chung cả team)</label>
-        <input id="zai-gemini-key" placeholder="AIzaSy... (lấy miễn phí tại aistudio.google.com)" type="text">
+    // Config section
+    const cfg = document.createElement('div');
+    cfg.className = 'zai-cfg';
+    cfg.id = 'zai-cfg';
+    cfg.style.display = 'none';
 
-        <button class="zai-cfg-save" id="zai-cfg-save">💾 Lưu cài đặt</button>
-        <div class="zai-cfg-hint">Key Gemini được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.</div>
-      </div>
+    const lbGas = document.createElement('label');
+    lbGas.textContent = 'URL Web App GAS (appweb teamduyen)';
+    cfg.appendChild(lbGas);
 
-      <!-- Body -->
-      <div class="zai-body" id="zai-body">
-        <div>
-          <div class="zai-section-label">Số điện thoại khách</div>
-          <div class="zai-phone-row">
-            <input id="zai-phone-input" placeholder="0901234567" type="tel">
-            <button class="zai-btn zai-btn-primary zai-btn-sm" onclick="window._zaiLookup()">Tra cứu</button>
-          </div>
-          <div style="font-size:10px;color:#9ca3af;margin-top:3px" id="zai-auto-hint"></div>
-        </div>
+    const inpGas = document.createElement('input');
+    inpGas.id = 'zai-gas-url';
+    inpGas.type = 'text';
+    inpGas.placeholder = 'https://script.google.com/macros/s/...';
+    cfg.appendChild(inpGas);
 
-        <div id="zai-cust-area"></div>
+    const lbKey = document.createElement('label');
+    lbKey.textContent = '🔑 Gemini API Key (lưu 1 lần dùng chung cả team)';
+    cfg.appendChild(lbKey);
 
-        <div class="zai-update-section" id="zai-update-section" style="display:none">
-          <div class="zai-section-label" style="margin-bottom:6px">📋 Cập nhật tình trạng CS</div>
-          <label>Tình trạng</label>
-          <select id="zai-status-sel">
-            <option value="">— Chọn —</option>
-            ${CARE_STATUSES.map(s => `<option value="${s}">${s}</option>`).join('')}
-          </select>
-          <label>Ghi chú</label>
-          <textarea id="zai-note-ta" placeholder="Ghi chú thêm..." rows="2"></textarea>
-          <div class="zai-save-row">
-            <button class="zai-btn zai-btn-primary zai-btn-sm" id="zai-save-btn" onclick="window._zaiSaveStatus()">💾 Lưu về GSheet</button>
-            <span class="zai-save-status" id="zai-save-status"></span>
-          </div>
-        </div>
+    const inpKey = document.createElement('input');
+    inpKey.id = 'zai-gemini-key';
+    inpKey.type = 'text';
+    inpKey.placeholder = 'AIzaSy... (lấy miễn phí tại aistudio.google.com)';
+    cfg.appendChild(inpKey);
 
-        <hr class="zai-div">
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'zai-cfg-save';
+    saveBtn.id = 'zai-cfg-save';
+    saveBtn.textContent = '💾 Lưu cài đặt';
+    cfg.appendChild(saveBtn);
 
-        <div>
-          <div class="zai-section-label">Tin nhắn khách (copy từ Zalo)</div>
-          <textarea class="zai-msg-area" id="zai-msg" placeholder="Dán tin nhắn của khách vào đây..."></textarea>
-          <div style="margin-top:5px;font-size:11px;color:#6b7280">Ngữ cảnh / Sản phẩm (tuỳ chọn)</div>
-          <input class="zai-ctx-input" id="zai-ctx" placeholder="VD: Đang tư vấn kem dưỡng, khách hỏi về giá...">
-          <div class="zai-tones" style="margin-top:8px">
-            <button class="zai-tone active" data-tone="Thân thiện" onclick="window._zaiTone(this)">Thân thiện</button>
-            <button class="zai-tone" data-tone="Chuyên nghiệp" onclick="window._zaiTone(this)">Chuyên nghiệp</button>
-            <button class="zai-tone" data-tone="Ngắn gọn" onclick="window._zaiTone(this)">Ngắn gọn</button>
-            <button class="zai-tone" data-tone="Nhiệt tình" onclick="window._zaiTone(this)">Nhiệt tình</button>
-          </div>
-          <button class="zai-btn zai-btn-primary" id="zai-gen-btn" onclick="window._zaiGenerate()" style="width:100%;margin-top:8px">✨ Tạo gợi ý AI</button>
-        </div>
+    const hint = document.createElement('div');
+    hint.className = 'zai-cfg-hint';
+    hint.textContent = 'Key Gemini được lưu vào Google Sheets, dùng chung cho cả team. Chỉ cần nhập 1 lần.';
+    cfg.appendChild(hint);
+    panel.appendChild(cfg);
 
-        <div id="zai-sug-area"></div>
-        <div class="zai-error" id="zai-error" style="display:none"></div>
-      </div>
-    `;
+    // Body
+    const body = document.createElement('div');
+    body.className = 'zai-body';
+    body.id = 'zai-body';
+
+    // Phone section
+    const phoneWrap = document.createElement('div');
+    const phoneLbl = document.createElement('div');
+    phoneLbl.className = 'zai-section-label';
+    phoneLbl.textContent = 'Số điện thoại khách';
+    phoneWrap.appendChild(phoneLbl);
+
+    const phoneRow = document.createElement('div');
+    phoneRow.className = 'zai-phone-row';
+    const phoneInp = document.createElement('input');
+    phoneInp.id = 'zai-phone-input';
+    phoneInp.type = 'tel';
+    phoneInp.placeholder = '0901234567';
+    const lookupBtn = document.createElement('button');
+    lookupBtn.className = 'zai-btn zai-btn-primary zai-btn-sm';
+    lookupBtn.id = 'zai-lookup-btn';
+    lookupBtn.textContent = 'Tra cứu';
+    phoneRow.appendChild(phoneInp);
+    phoneRow.appendChild(lookupBtn);
+    phoneWrap.appendChild(phoneRow);
+
+    const autoHint = document.createElement('div');
+    autoHint.id = 'zai-auto-hint';
+    autoHint.style.cssText = 'font-size:10px;color:#00b14f;margin-top:3px';
+    phoneWrap.appendChild(autoHint);
+    body.appendChild(phoneWrap);
+
+    // Customer area
+    const custArea = document.createElement('div');
+    custArea.id = 'zai-cust-area';
+    body.appendChild(custArea);
+
+    // Update section
+    const updateSec = document.createElement('div');
+    updateSec.className = 'zai-update-section';
+    updateSec.id = 'zai-update-section';
+    updateSec.style.display = 'none';
+
+    const updateLbl = document.createElement('div');
+    updateLbl.className = 'zai-section-label';
+    updateLbl.style.marginBottom = '6px';
+    updateLbl.textContent = '📋 Cập nhật tình trạng CS';
+    updateSec.appendChild(updateLbl);
+
+    const statusLbl = document.createElement('label');
+    statusLbl.textContent = 'Tình trạng';
+    updateSec.appendChild(statusLbl);
+
+    const statusSel = document.createElement('select');
+    statusSel.id = 'zai-status-sel';
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = '— Chọn —';
+    statusSel.appendChild(defOpt);
+    CARE_STATUSES.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      statusSel.appendChild(o);
+    });
+    updateSec.appendChild(statusSel);
+
+    const noteLbl = document.createElement('label');
+    noteLbl.textContent = 'Ghi chú';
+    updateSec.appendChild(noteLbl);
+
+    const noteTa = document.createElement('textarea');
+    noteTa.id = 'zai-note-ta';
+    noteTa.placeholder = 'Ghi chú thêm...';
+    noteTa.rows = 2;
+    updateSec.appendChild(noteTa);
+
+    const saveRow = document.createElement('div');
+    saveRow.className = 'zai-save-row';
+    const saveStatusBtn = document.createElement('button');
+    saveStatusBtn.className = 'zai-btn zai-btn-primary zai-btn-sm';
+    saveStatusBtn.id = 'zai-save-btn';
+    saveStatusBtn.textContent = '💾 Lưu về GSheet';
+    const saveStatusSpan = document.createElement('span');
+    saveStatusSpan.className = 'zai-save-status';
+    saveStatusSpan.id = 'zai-save-status';
+    saveRow.appendChild(saveStatusBtn);
+    saveRow.appendChild(saveStatusSpan);
+    updateSec.appendChild(saveRow);
+    body.appendChild(updateSec);
+
+    // Divider
+    const hr = document.createElement('hr');
+    hr.className = 'zai-div';
+    body.appendChild(hr);
+
+    // AI section
+    const aiWrap = document.createElement('div');
+    const msgLbl = document.createElement('div');
+    msgLbl.className = 'zai-section-label';
+    msgLbl.textContent = 'Tin nhắn khách (copy từ Zalo)';
+    aiWrap.appendChild(msgLbl);
+
+    const msgTa = document.createElement('textarea');
+    msgTa.className = 'zai-msg-area';
+    msgTa.id = 'zai-msg';
+    msgTa.placeholder = 'Dán tin nhắn của khách vào đây...';
+    aiWrap.appendChild(msgTa);
+
+    const ctxLbl = document.createElement('div');
+    ctxLbl.style.cssText = 'margin-top:5px;font-size:11px;color:#6b7280';
+    ctxLbl.textContent = 'Ngữ cảnh / Sản phẩm (tuỳ chọn)';
+    aiWrap.appendChild(ctxLbl);
+
+    const ctxInp = document.createElement('input');
+    ctxInp.className = 'zai-ctx-input';
+    ctxInp.id = 'zai-ctx';
+    ctxInp.placeholder = 'VD: Đang tư vấn kem dưỡng, khách hỏi về giá...';
+    aiWrap.appendChild(ctxInp);
+
+    const tonesDiv = document.createElement('div');
+    tonesDiv.className = 'zai-tones';
+    tonesDiv.style.marginTop = '8px';
+    ['Thân thiện', 'Chuyên nghiệp', 'Ngắn gọn', 'Nhiệt tình'].forEach((t, i) => {
+      const tb = document.createElement('button');
+      tb.className = 'zai-tone' + (i === 0 ? ' active' : '');
+      tb.dataset.tone = t;
+      tb.textContent = t;
+      tonesDiv.appendChild(tb);
+    });
+    aiWrap.appendChild(tonesDiv);
+
+    const genBtn = document.createElement('button');
+    genBtn.className = 'zai-btn zai-btn-primary';
+    genBtn.id = 'zai-gen-btn';
+    genBtn.textContent = '✨ Tạo gợi ý AI';
+    genBtn.style.cssText = 'width:100%;margin-top:8px';
+    aiWrap.appendChild(genBtn);
+    body.appendChild(aiWrap);
+
+    // Suggestions + error
+    const sugArea = document.createElement('div');
+    sugArea.id = 'zai-sug-area';
+    body.appendChild(sugArea);
+
+    const errDiv = document.createElement('div');
+    errDiv.className = 'zai-error';
+    errDiv.id = 'zai-error';
+    errDiv.style.display = 'none';
+    body.appendChild(errDiv);
+
+    panel.appendChild(body);
     document.body.appendChild(panel);
 
-    document.getElementById('zai-cfg-toggle').onclick = () => {
+    // ── EVENT LISTENERS ──
+    cfgBtn.addEventListener('click', () => {
       _cfgVisible = !_cfgVisible;
-      document.getElementById('zai-cfg').style.display = _cfgVisible ? 'block' : 'none';
-    };
+      cfg.style.display = _cfgVisible ? 'block' : 'none';
+    });
 
-    document.getElementById('zai-cfg-save').onclick = saveConfig;
+    saveBtn.addEventListener('click', saveConfig);
+    lookupBtn.addEventListener('click', doLookup);
+    saveStatusBtn.addEventListener('click', doSaveStatus);
+    genBtn.addEventListener('click', doGenerate);
+
+    tonesDiv.addEventListener('click', (e) => {
+      const tb = e.target.closest('.zai-tone');
+      if (!tb) return;
+      tonesDiv.querySelectorAll('.zai-tone').forEach(b => b.classList.remove('active'));
+      tb.classList.add('active');
+      _activeTone = tb.dataset.tone;
+    });
 
     chrome.storage.local.get(['ome_gas_url'], (res) => {
       GAS_URL = res.ome_gas_url || '';
-      if (GAS_URL) document.getElementById('zai-gas-url').value = GAS_URL;
+      if (GAS_URL) inpGas.value = GAS_URL;
       if (!GAS_URL) {
         _cfgVisible = true;
-        document.getElementById('zai-cfg').style.display = 'block';
+        cfg.style.display = 'block';
       }
     });
   }
@@ -128,7 +277,8 @@
   }
 
   async function saveConfig() {
-    GAS_URL = document.getElementById('zai-gas-url').value.trim();
+    const gasEl = document.getElementById('zai-gas-url');
+    GAS_URL = (gasEl ? gasEl.value.trim() : '');
     if (!GAS_URL) { showError('Vui lòng nhập URL GAS.'); return; }
     chrome.storage.local.set({ ome_gas_url: GAS_URL });
 
@@ -146,12 +296,10 @@
           showMsg('zai-save-status', '✓ Đã lưu Gemini Key lên GSheet!', 3000);
           if (keyEl) keyEl.value = '';
         } else {
-          showError('Lỗi lưu key: ' + JSON.stringify(d));
-          return;
+          showError('Lỗi lưu key: ' + JSON.stringify(d)); return;
         }
       } catch (e) {
-        showError('Lỗi kết nối GAS: ' + e.message);
-        return;
+        showError('Lỗi kết nối GAS: ' + e.message); return;
       }
     }
 
@@ -184,7 +332,7 @@
           inp.value = phone;
           const hint = document.getElementById('zai-auto-hint');
           if (hint) hint.textContent = '✓ Tự động phát hiện: ' + name.trim();
-          window._zaiLookup();
+          doLookup();
         }
       }
     });
@@ -223,7 +371,7 @@
   }
 
   // ── LOOKUP ──
-  window._zaiLookup = async function () {
+  async function doLookup() {
     const raw = (document.getElementById('zai-phone-input').value || '').trim();
     if (!raw) { showError('Vui lòng nhập số điện thoại.'); return; }
     hideError();
@@ -239,7 +387,7 @@
       const orders = (data.orders[phone] || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
 
       if (!care && !orders.length) {
-        area.innerHTML = `<div class="zai-not-found">Không tìm thấy <strong>${raw}</strong>.<br><small>Thử Sync GS trên app trước.</small></div>`;
+        area.innerHTML = `<div class="zai-not-found">Không tìm thấy <strong>${escHtml(raw)}</strong>.<br><small>Thử Sync GS trên app trước.</small></div>`;
         return;
       }
 
@@ -250,7 +398,7 @@
 
       area.innerHTML = `
         <div class="zai-card">
-          <div class="zai-card-name">${escHtml(name)} <span style="font-size:11px;font-weight:400;color:#9ca3af">${raw}</span></div>
+          <div class="zai-card-name">${escHtml(name)} <span style="font-size:11px;font-weight:400;color:#9ca3af">${escHtml(raw)}</span></div>
           <div class="zai-chips">
             ${orders.length ? `<span class="zai-chip">📦 ${orders.length} đơn</span>` : ''}
             ${totalRev ? `<span class="zai-chip">💰 ${Math.round(totalRev / 1000)}K</span>` : ''}
@@ -275,10 +423,10 @@
       area.innerHTML = '';
       showError(e.message);
     }
-  };
+  }
 
   // ── SAVE STATUS ──
-  window._zaiSaveStatus = async function () {
+  async function doSaveStatus() {
     if (!_currentCustData) { showError('Chưa tra cứu khách nào.'); return; }
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS.'); return; }
     const status = document.getElementById('zai-status-sel').value;
@@ -313,10 +461,10 @@
     } finally {
       btn.disabled = false; btn.textContent = '💾 Lưu về GSheet';
     }
-  };
+  }
 
   // ── AI GENERATE ──
-  window._zaiGenerate = async function () {
+  async function doGenerate() {
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS. Nhấn ⚙.'); return; }
     const msg = (document.getElementById('zai-msg').value || '').trim();
     if (!msg) { showError('Vui lòng dán tin nhắn của khách.'); return; }
@@ -362,35 +510,42 @@
       const sugs = text.split(/\n(?=\d+\.)/).map(s => s.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       if (!sugs.length) sugs.push(text.trim());
 
-      sugArea.innerHTML = `
-        <div class="zai-section-label">💡 Gợi ý phản hồi (click để copy)</div>
-        ${sugs.map((s, i) => `
-          <div class="zai-sug" onclick="window._zaiCopy(this,'${encodeURIComponent(s)}')">
-            <div class="zai-sug-num">Phương án ${i + 1}</div>
-            <div>${escHtml(s).replace(/\n/g, '<br>')}</div>
-            <span class="zai-copy-badge">Copy</span>
-          </div>`).join('')}`;
+      sugArea.innerHTML = '';
+      const sugLbl = document.createElement('div');
+      sugLbl.className = 'zai-section-label';
+      sugLbl.textContent = '💡 Gợi ý phản hồi (click để copy)';
+      sugArea.appendChild(sugLbl);
+
+      sugs.forEach((s, i) => {
+        const card = document.createElement('div');
+        card.className = 'zai-sug';
+        const num = document.createElement('div');
+        num.className = 'zai-sug-num';
+        num.textContent = 'Phương án ' + (i + 1);
+        const txt = document.createElement('div');
+        txt.innerHTML = escHtml(s).replace(/\n/g, '<br>');
+        const badge = document.createElement('span');
+        badge.className = 'zai-copy-badge';
+        badge.textContent = 'Copy';
+        card.appendChild(num);
+        card.appendChild(txt);
+        card.appendChild(badge);
+        card.addEventListener('click', () => {
+          navigator.clipboard.writeText(s).then(() => {
+            badge.textContent = '✓ Đã copy!';
+            badge.classList.add('zai-copied');
+            setTimeout(() => { badge.textContent = 'Copy'; badge.classList.remove('zai-copied'); }, 1500);
+          });
+        });
+        sugArea.appendChild(card);
+      });
     } catch (e) {
       sugArea.innerHTML = '';
       showError('Lỗi: ' + e.message);
     } finally {
       btn.disabled = false; btn.textContent = '✨ Tạo gợi ý AI';
     }
-  };
-
-  window._zaiCopy = function (el, encoded) {
-    navigator.clipboard.writeText(decodeURIComponent(encoded)).then(() => {
-      const badge = el.querySelector('.zai-copy-badge');
-      if (badge) { badge.textContent = '✓ Đã copy!'; badge.classList.add('zai-copied'); }
-      setTimeout(() => { if (badge) { badge.textContent = 'Copy'; badge.classList.remove('zai-copied'); } }, 1500);
-    });
-  };
-
-  window._zaiTone = function (btn) {
-    document.querySelectorAll('.zai-tone').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    _activeTone = btn.dataset.tone;
-  };
+  }
 
   function showError(msg) {
     const el = document.getElementById('zai-error');
