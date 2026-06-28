@@ -1,4 +1,4 @@
-// OME Zalo AI Helper - content script v14.7
+// OME Zalo AI Helper - content script v14.8
 // v14.7: Nick Zalo selector, Trang thai KH, reminder polling, extended ZALO_STATUSES
 (function () {
   'use strict';
@@ -165,6 +165,10 @@
     addEl(upd, 'label', {textContent:'CS chăm sóc'});
     const csSel = addEl(upd, 'select', {id:'zai-cs-sel'});
     CS_NAMES.forEach(s => addEl(csSel, 'option', {value:s, textContent:s||'— Chọn CS —'}));
+
+    addEl(upd, 'label', {textContent:'Nick Zalo CS đang dùng'});
+    const nzFormSel = addEl(upd, 'select', {id:'zai-nz-form-sel'});
+    addEl(nzFormSel, 'option', {value:'', textContent:'— Chọn nick —'});
 
     addEl(upd, 'label', {textContent:'Trạng thái KH'});
     const khStatusSel = addEl(upd, 'select', {id:'zai-kh-status-sel'});
@@ -506,6 +510,8 @@
       .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
     const csSel = document.getElementById('zai-cs-sel');
     if (csSel) csSel.value = _currentCS || '';
+    const nzF = document.getElementById('zai-nz-form-sel');
+    if (nzF) nzF.value = _currentZaloNick || '';
   }
 
   function renderCard_(area, updSec, phone, raw, care, orders) {
@@ -545,6 +551,16 @@
     document.getElementById('zai-hen-note').value   = care&&care.schedHenNote||'';
     document.getElementById('zai-note-ta').value    = care&&care.note||'';
     document.getElementById('zai-kh-status-sel').value = care&&care.khStatus||'';
+    // Nick Zalo form: dung nick sticky; neu khach da co nick nay thi giu, neu chua co thi van hien de de them
+    const nzF = document.getElementById('zai-nz-form-sel');
+    if (nzF) {
+      // Rebuild options tu _zaloNickList + nick khach da luu
+      nzF.innerHTML = '<option value="">— Chọn nick —</option>';
+      const allNicks = [...new Set([..._zaloNickList, ...(care&&care.nickZalos||[])])];
+      allNicks.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; nzF.appendChild(o); });
+      // Auto-chon: uu tien nick sticky, neu nick sticky co trong list khach thi dung, neu khong thi van chon sticky
+      nzF.value = _currentZaloNick || (care&&care.nickZalos&&care.nickZalos[0]||'');
+    }
   }
 
   // ── SAVE STATUS ──
@@ -841,6 +857,14 @@
           const o = document.createElement('option'); o.value=n; o.textContent=n; nzSel.appendChild(o);
         });
         if (_currentZaloNick) nzSel.value = _currentZaloNick;
+      }
+      // Sync vao form selector neu dang mo
+      const nzF = document.getElementById('zai-nz-form-sel');
+      if (nzF) {
+        const cur = nzF.value;
+        nzF.innerHTML = '<option value="">— Chọn nick —</option>';
+        _zaloNickList.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; nzF.appendChild(o); });
+        nzF.value = cur || _currentZaloNick || '';
       }
     } catch(e) {}
   }
