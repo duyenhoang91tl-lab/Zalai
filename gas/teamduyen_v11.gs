@@ -124,7 +124,14 @@ function readOrdersByPhone_(phone) {
       });
     }
   }
-  return out;
+  // Dedup: cung ngay + doanh thu + san pham thi chi giu 1 dong
+  var seen = {};
+  var deduped = [];
+  for (var k = 0; k < out.length; k++) {
+    var key = String(out[k].date) + '|' + String(out[k].revenue) + '|' + String(out[k].product);
+    if (!seen[key]) { seen[key] = true; deduped.push(out[k]); }
+  }
+  return deduped;
 }
 
 function readAllOrders_() {
@@ -294,7 +301,7 @@ function buildDashboard_() {
   var orders = readAllOrders_();
   var phones = {}, revenue = 0, friend = 0;
   for (var i = 0; i < care.length; i++) {
-    if (care[i].zalo === 'Da ket ban' || care[i].zalo === 'Đã kết bạn') friend++;
+    if (care[i].zalo === 'Da ket ban' || care[i].zalo === 'Da ket ban') friend++;
   }
   for (var j = 0; j < orders.length; j++) {
     phones[orders[j].phone] = true;
@@ -665,7 +672,14 @@ function saveAIContext_(type, content, context) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SH_CONTEXT);
   if (!sh) { sh = ss.insertSheet(SH_CONTEXT); sh.appendRow(['type','content','context','created']); }
-  sh.appendRow([type, content, context||'', new Date().toISOString()]);
+  // Them header neu chua co cot context/created
+  var headers = sh.getLastRow() > 0 ? sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0] : [];
+  if (headers.length < 3) {
+    // Sheet cu chi co 2 cot -- them vao cuoi
+    sh.appendRow([type, content, context||'', new Date().toISOString()]);
+  } else {
+    sh.appendRow([type, content, context||'', new Date().toISOString()]);
+  }
   return jsonOut_({ ok: true });
 }
 
@@ -713,7 +727,7 @@ function readAIContext_() {
 
 function callGeminiAI_(data) {
   var key = getSetting_('geminiKey');
-  if (!key) return jsonOut_({ error: 'Chua co API Key. Mo extension -> nut banh rang -> nhap key Groq -> Luu.' });
+  if (!key) return jsonOut_({ error: 'Chua co API Key. Mo extension → nut banh rang → nhap key Groq → Luu.' });
   var userMsg = data.prompt || '';
   if (!userMsg) return jsonOut_({ error: 'Thieu noi dung tin nhan' });
 
