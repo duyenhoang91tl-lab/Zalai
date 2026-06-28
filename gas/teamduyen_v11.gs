@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
-//  OME CS Portal — Google Apps Script v11.0
+//  OME CS Portal — Google Apps Script v11.2
+//  MOI v11.2: Them khStatus, nickZalos vao CareData; action=reminders; action=getSetting
 //  MOI v11.0: Them action=lookup (server-side search theo phone, co CacheService)
 //             Them normPhone_ de xu ly so dien thoai GSheet luu thieu so 0
 //             CacheService cho action=customers va action=lookup (TTL 5 phut)
@@ -37,7 +38,7 @@ var SH_ORDER_DEFAULT = 'OrderData26';
 
 var CARE_HEADERS  = ['phone','status','zalo','cs','note','schedules',
   'schedGoi','schedGoiNote','schedSP','schedSPNote',
-  'schedCS','schedCSNote','schedHen','schedHenNote','updated'];
+  'schedCS','schedCSNote','schedHen','schedHenNote','updated','khStatus','nickZalos'];
 var ORDER_HEADERS = ['phone','name','date','year','month','cs','source','revenue',
   'product','productDetail','status','zalo','note','careCS'];
 var TEAM_HEADERS  = ['id','name','leader','members','color'];
@@ -97,7 +98,9 @@ function findCareByPhone_(phone) {
         schedGoi: vals[i][6]||'', schedGoiNote: vals[i][7]||'',
         schedSP: vals[i][8]||'', schedSPNote: vals[i][9]||'',
         schedCS: vals[i][10]||'', schedCSNote: vals[i][11]||'',
-        schedHen: vals[i][12]||'', schedHenNote: vals[i][13]||'', updated: vals[i][14]||''
+        schedHen: vals[i][12]||'', schedHenNote: vals[i][13]||'', updated: vals[i][14]||'',
+        khStatus: vals[i][15]||'',
+        nickZalos: (function() { try { return JSON.parse(vals[i][16]||'[]'); } catch(e){ return []; } })()
       };
     }
   }
@@ -156,7 +159,9 @@ function readCare_(sh) {
       schedGoi: vals[i][6]||'', schedGoiNote: vals[i][7]||'',
       schedSP: vals[i][8]||'', schedSPNote: vals[i][9]||'',
       schedCS: vals[i][10]||'', schedCSNote: vals[i][11]||'',
-      schedHen: vals[i][12]||'', schedHenNote: vals[i][13]||'', updated: vals[i][14]||''
+      schedHen: vals[i][12]||'', schedHenNote: vals[i][13]||'', updated: vals[i][14]||'',
+      khStatus: vals[i][15]||'',
+      nickZalos: (function() { try { return JSON.parse(vals[i][16]||'[]'); } catch(e){ return []; } })()
     });
   }
   return out;
@@ -284,6 +289,39 @@ function doGet(e) {
       });
     }
 
+    if (action === 'reminders') {
+      var csFilter = (e && e.parameter && e.parameter.cs) ? String(e.parameter.cs) : '';
+      var ss2 = SpreadsheetApp.getActiveSpreadsheet();
+      var sh2 = ss2.getSheetByName(SH_CARE);
+      if (!sh2 || sh2.getLastRow() < 2) return jsonOut_({ reminders: [] });
+      var vals2 = sh2.getDataRange().getValues();
+      var today = new Date(); today.setHours(0,0,0,0);
+      var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+      var reminders = [];
+      for (var ri = 1; ri < vals2.length; ri++) {
+        if (!vals2[ri][0]) continue;
+        var rcs = String(vals2[ri][3]||'').trim();
+        if (csFilter && rcs !== csFilter) continue;
+        var rhen = vals2[ri][12];
+        if (!rhen) continue;
+        var rdate = new Date(rhen); rdate.setHours(0,0,0,0);
+        if (rdate <= today) { // due today or overdue
+          reminders.push({
+            phone: vals2[ri][0], name: vals2[ri][0],
+            schedHen: String(rhen), schedHenNote: String(vals2[ri][13]||''),
+            cs: rcs, status: String(vals2[ri][1]||''),
+            overdue: rdate < today
+          });
+        }
+      }
+      return jsonOut_({ reminders: reminders });
+    }
+
+    if (action === 'getSetting') {
+      var skey = (e && e.parameter && e.parameter.key) ? String(e.parameter.key) : '';
+      return jsonOut_({ value: getSetting_(skey) });
+    }
+
     // default — backward compatible
     var result3 = { rows: readCare_(ss.getSheetByName(SH_CARE)), orders: [] };
     if (!(e && e.parameter && e.parameter.noOrders)) {
@@ -301,7 +339,7 @@ function buildDashboard_() {
   var orders = readAllOrders_();
   var phones = {}, revenue = 0, friend = 0;
   for (var i = 0; i < care.length; i++) {
-    if (care[i].zalo === 'Da ket ban' || care[i].zalo === 'Da ket ban') friend++;
+    if (care[i].zalo === 'Da ket ban' || care[i].zalo === 'Đã kết bạn') friend++;
   }
   for (var j = 0; j < orders.length; j++) {
     phones[orders[j].phone] = true;
@@ -391,7 +429,8 @@ function saveBatchCare_(rows) {
 function careRow_(r) {
   return [r.phone||'', r.status||'', r.zalo||'', r.cs||'', r.note||'', r.schedules||'',
     r.schedGoi||'', r.schedGoiNote||'', r.schedSP||'', r.schedSPNote||'',
-    r.schedCS||'', r.schedCSNote||'', r.schedHen||'', r.schedHenNote||'', new Date().toISOString()];
+    r.schedCS||'', r.schedCSNote||'', r.schedHen||'', r.schedHenNote||'', new Date().toISOString(),
+    r.khStatus||'', JSON.stringify(r.nickZalos||[])];
 }
 
 function saveOrders_(orders) {
@@ -675,7 +714,7 @@ function saveAIContext_(type, content, context) {
   // Them header neu chua co cot context/created
   var headers = sh.getLastRow() > 0 ? sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0] : [];
   if (headers.length < 3) {
-    // Sheet cu chi co 2 cot -- them vao cuoi
+    // Sheet cu chi co 2 cot — them vao cuoi
     sh.appendRow([type, content, context||'', new Date().toISOString()]);
   } else {
     sh.appendRow([type, content, context||'', new Date().toISOString()]);
@@ -797,7 +836,7 @@ function testScript() {
   }
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var oss2 = getOrderSS_();
-  var log = 'OK v11.0 - CareData:' + ss.getSheetByName(SH_CARE).getLastRow();
+  var log = 'OK v11.2 - CareData:' + ss.getSheetByName(SH_CARE).getLastRow();
   for (var j = 0; j < ORDER_SHEETS.length; j++) {
     var sh = oss2.getSheetByName(ORDER_SHEETS[j].name);
     log += ' | ' + ORDER_SHEETS[j].name + ':' + (sh ? sh.getLastRow() : 'missing');
