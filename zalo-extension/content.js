@@ -65,7 +65,7 @@
 
     body.appendChild(Object.assign(document.createElement('hr'), {className:'zai-div'}));
 
-    // 2. AI SECTION (len tren)
+    // 2. AI SECTION
     const aiWrap = addEl(body, 'div', {});
     const tonesDiv = addEl(aiWrap, 'div', {className:'zai-tones', style:'margin-bottom:8px'});
     ['Thân thiện','Chuyên nghiệp','Ngắn gọn','Nhiệt tình'].forEach((t,i) => {
@@ -75,16 +75,13 @@
     addEl(aiWrap, 'button', {className:'zai-btn zai-btn-secondary', id:'zai-open-btn',
       textContent:'💬 Tạo TN mở đầu (dựa lịch sử mua)', style:'width:100%;margin-bottom:8px'});
 
-    // Grab row
     const msgHdr = addEl(aiWrap, 'div', {style:'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px'});
     addEl(msgHdr, 'div', {className:'zai-section-label', style:'margin:0', textContent:'Tin nhắn khách'});
     addEl(msgHdr, 'button', {className:'zai-btn zai-btn-ghost zai-btn-sm', id:'zai-grab-btn',
       textContent:'📥 Lấy TN', title:'Tự động lấy 100 tin nhắn gần nhất của khách'});
 
-    // History status
     const histStatus = addEl(aiWrap, 'div', {id:'zai-hist-status', style:'font-size:11px;color:#6b7280;margin-bottom:4px;display:none'});
 
-    // Textarea (an mac dinh)
     const msgTa = addEl(aiWrap, 'textarea', {className:'zai-msg-area', id:'zai-msg',
       placeholder:'Dán thủ công nếu cần...'});
     msgTa.style.display = 'none';
@@ -99,10 +96,7 @@
 
     body.appendChild(Object.assign(document.createElement('hr'), {className:'zai-div'}));
 
-    // 3. CUSTOMER CARD (xuong duoi)
-    addEl(body, 'div', {id:'zai-cust-area'});
-
-    // 4. UPDATE SECTION
+    // 3. UPDATE SECTION (tren)
     const upd = addEl(body, 'div', {className:'zai-update-section', id:'zai-update-section'});
     upd.style.display = 'none';
     addEl(upd, 'div', {className:'zai-section-label', style:'margin-bottom:8px', textContent:'📋 Cập nhật thông tin CS'});
@@ -137,6 +131,9 @@
     const saveRow = addEl(upd, 'div', {className:'zai-save-row'});
     addEl(saveRow, 'button', {className:'zai-btn zai-btn-primary zai-btn-sm', id:'zai-save-btn', textContent:'💾 Lưu về GSheet'});
     addEl(saveRow, 'span', {className:'zai-save-status', id:'zai-save-status'});
+
+    // 4. CUSTOMER CARD (duoi cung)
+    addEl(body, 'div', {id:'zai-cust-area'});
 
     panel.appendChild(body);
     document.body.appendChild(panel);
@@ -251,8 +248,6 @@
   }
 
   // GRAB TIN NHAN KHACH
-
-  // Lay text thuan, bo qua <img> (Zalo render emoticon thanh img)
   function getTextOnly_(el) {
     let t = '';
     for (const node of el.childNodes) {
@@ -264,15 +259,10 @@
 
   function stripText_(text) {
     return text
-      // Xoa timestamp noi tuyen vi du "20:23" gan sat chu
       .replace(/\d{1,2}:\d{2}/g, '')
-      // Zalo text emoticon dang /-heart/ hoac /-heart
       .replace(/\/-[\w-]+\/?/g, '')
-      // Emoticon alt text dang -heart -strong (khong co slash dau)
       .replace(/(^|\s)-[a-z][\w-]*/gi, '$1')
-      // Text emoticons ASCII
       .replace(/:-?[hH]|:-?[)(DdPpOo><]|:[vV3]|=\)+|\^{2,}|>:<|:\*/g, '')
-      // Unicode emoji
       .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
       .replace(/[\u{2600}-\u{27BF}]/gu, '')
       .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
@@ -339,7 +329,6 @@
     if (last100.length) {
       _chatHistory = last100;
       if (msgTa) msgTa.value = last100.join('\n---\n');
-
       if (histStatus) {
         _histVisible = false;
         if (msgTa) msgTa.style.display = 'none';
