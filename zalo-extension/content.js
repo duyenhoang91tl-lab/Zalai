@@ -9,11 +9,11 @@
   let _currentPhone = '';
   let _currentCustData = null;
   let _cfgVisible = false;
-  let _chatHistory = []; // luu tin nhan khach, khong hien thi trong textarea
+  let _chatHistory = [];
   let _histVisible = false;
-  let _currentCS = ''; // CS dang dung, luu vao chrome.storage
-  let _currentZaloNick = ''; // Nick Zalo CS dang dung, sticky
-  let _zaloNickList = []; // danh sach nick tu GAS
+  let _currentCS = '';
+  let _currentZaloNick = '';
+  let _zaloNickList = [];
 
   const LOOKUP_TTL = 5 * 60 * 1000;
   const CARE_STATUSES = [
@@ -29,9 +29,8 @@
   '4.1 Không hiệu quả','4.2 Đã có kết quả','4.3 Đã đổi sang sản phẩm khác',
   '5. Đang tạm dừng','6. Nhận hộ / Sai số','7. Ngang Cúp','8. Từ chối'
 ];
-  let CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt']; // fallback, se load tu GAS
+  let CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt'];
 
-  // ── BUILD PANEL ──
   function buildPanel() {
     if (document.getElementById('ome-zai-panel')) return;
 
@@ -43,13 +42,11 @@
     const panel = document.createElement('div');
     panel.id = 'ome-zai-panel';
 
-    // Header
     const hdr = document.createElement('div');
     hdr.className = 'zai-hdr';
     hdr.innerHTML = '<span>🤖 OME Zalo AI Helper</span><button id="zai-close-btn" title="Đóng">✕</button>';
     panel.appendChild(hdr);
 
-    // CS sticky bar
     const csBar = document.createElement('div');
     csBar.id = 'zai-cs-bar';
     csBar.style.cssText = 'background:#dcfce7;border-bottom:2px solid #86efac;padding:5px 10px;font-size:11px;';
@@ -69,18 +66,15 @@
       '</div>';
     panel.appendChild(csBar);
 
-    // Tabs
     const tabs = document.createElement('div');
     tabs.className = 'zai-tabs';
     tabs.innerHTML = ['Tìm KH','Cập nhật','AI','Lịch sử tin'].map((t,i) =>
       `<button class="zai-tab${i===0?' active':''}" data-tab="${i}">${t}</button>`).join('');
     panel.appendChild(tabs);
 
-    // Tab panes
     const panes = document.createElement('div');
     panes.className = 'zai-panes';
 
-    // Pane 0: Tìm KH
     const p0 = document.createElement('div');
     p0.className = 'zai-pane active';
     p0.innerHTML =
@@ -91,7 +85,6 @@
       '<div id="zai-card"></div>';
     panes.appendChild(p0);
 
-    // Pane 1: Cập nhật
     const p1 = document.createElement('div');
     p1.className = 'zai-pane';
     p1.innerHTML =
@@ -113,7 +106,6 @@
       '<div id="zai-save-msg" style="font-size:11px;margin-top:4px;"></div>';
     panes.appendChild(p1);
 
-    // Pane 2: AI
     const p2 = document.createElement('div');
     p2.className = 'zai-pane';
     p2.innerHTML =
@@ -127,7 +119,6 @@
       '<div id="zai-ai-resp" style="margin-top:6px;font-size:11px;white-space:pre-wrap;"></div>';
     panes.appendChild(p2);
 
-    // Pane 3: Lịch sử tin
     const p3 = document.createElement('div');
     p3.className = 'zai-pane';
     p3.innerHTML = '<div id="zai-hist-list" style="font-size:11px;"><em>Chưa có tin nhắn nào.</em></div>';
@@ -135,7 +126,6 @@
 
     panel.appendChild(panes);
 
-    // Config section
     const cfg = document.createElement('div');
     cfg.id = 'zai-cfg';
     cfg.style.cssText = 'display:none;padding:8px;border-top:1px solid #e2e8f0;font-size:11px;';
@@ -146,7 +136,6 @@
       '<button id="zai-save-cfg">✓</button></div>';
     panel.appendChild(cfg);
 
-    // Footer
     const ftr = document.createElement('div');
     ftr.style.cssText = 'display:flex;justify-content:space-between;padding:4px 8px;border-top:1px solid #e2e8f0;';
     ftr.innerHTML = '<button id="zai-cfg-btn" style="font-size:10px;background:none;border:none;color:#94a3b8;cursor:pointer;">&#9881; Cài đặt</button>'+
@@ -166,7 +155,6 @@
   function initPanelEvents() {
     document.getElementById('zai-close-btn').addEventListener('click', togglePanel);
 
-    // Tabs
     document.querySelectorAll('.zai-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.zai-tab').forEach(b => b.classList.remove('active'));
@@ -176,14 +164,9 @@
       });
     });
 
-    // Tìm KH
     document.getElementById('zai-lookup-btn').addEventListener('click', doLookup_);
     document.getElementById('zai-phone').addEventListener('keydown', e => { if(e.key==='Enter') doLookup_(); });
-
-    // Lưu
     document.getElementById('zai-save-btn').addEventListener('click', doSaveStatus_);
-
-    // AI
     document.getElementById('zai-ai-btn').addEventListener('click', doAI_);
     document.getElementById('zai-tone-sel').addEventListener('change', e => { _activeTone = e.target.value; });
     document.getElementById('zai-hist-btn').addEventListener('click', () => {
@@ -192,7 +175,6 @@
       if (hb) hb.style.display = _histVisible ? '' : 'none';
     });
 
-    // Config
     document.getElementById('zai-cfg-btn').addEventListener('click', () => {
       _cfgVisible = !_cfgVisible;
       const cfg = document.getElementById('zai-cfg');
@@ -210,32 +192,27 @@
       }
     });
 
-    // CS sticky bar
     const csSel = document.getElementById('zai-cs-bar-sel');
     if (csSel) {
       csSel.addEventListener('change', () => {
         _currentCS = csSel.value;
         chrome.storage.local.set({ome_current_cs: _currentCS});
-        // Sync hidden cs input
         const fcs = document.getElementById('zai-cs-sel');
         if (fcs) fcs.value = _currentCS;
         startReminderPoll_();
       });
     }
 
-    // Nick Zalo sticky
     const nzSel = document.getElementById('zai-nz-sel');
     if (nzSel) {
       nzSel.addEventListener('change', () => {
         _currentZaloNick = nzSel.value;
         chrome.storage.local.set({ome_current_nz: _currentZaloNick});
-        // Sync hidden nick input
         const fnz = document.getElementById('zai-nz-form-sel');
         if (fnz) fnz.value = _currentZaloNick;
       });
     }
 
-    // Nick Zalo add button
     const nzAdd = document.getElementById('zai-nz-add');
     if (nzAdd) {
       nzAdd.addEventListener('click', async () => {
@@ -244,7 +221,6 @@
         const nick = name.trim();
         if (!_zaloNickList.includes(nick)) {
           _zaloNickList.push(nick);
-          // Save to GAS Settings
           if (GAS_URL) {
             const sep = GAS_URL.includes('?') ? '&' : '?';
             await fetch(GAS_URL + sep + 'action=saveSingle', {
@@ -253,13 +229,11 @@
               body: JSON.stringify({settingKey:'nickZaloList', settingValue: JSON.stringify(_zaloNickList)})
             }).catch(()=>{});
           }
-          // Rebuild sticky dropdown only (zai-nz-form-sel is hidden)
           const sel = document.getElementById('zai-nz-sel');
           if (sel) {
             const o = document.createElement('option'); o.value=nick; o.textContent=nick; sel.appendChild(o);
           }
         }
-        // Auto-select
         _currentZaloNick = nick;
         chrome.storage.local.set({ome_current_nz: nick});
         const s2 = document.getElementById('zai-nz-sel');
@@ -270,7 +244,6 @@
     }
   }
 
-  // ── LOAD CS NAMES ──
   async function loadCSNames_() {
     if (!GAS_URL) return;
     try {
@@ -279,7 +252,6 @@
       const d = await r.json();
       if (d.users && d.users.length) {
         CS_NAMES = ['', ...d.users];
-        // Rebuild CS bar selector only (zai-cs-sel is hidden input)
         const barSel = document.getElementById('zai-cs-bar-sel');
         if (barSel) {
           const cur = barSel.value;
@@ -295,7 +267,6 @@
     } catch(e) {}
   }
 
-  // ── LOOKUP ──
   async function doLookup_() {
     const raw = (document.getElementById('zai-phone')||{}).value || '';
     const phone = raw.trim().replace(/\s+/g,'');
@@ -316,12 +287,10 @@
       if (d.error) { showError(d.error); document.getElementById('zai-card').textContent=''; return; }
       _lookupCache[cacheKey] = {ts: now, data: d};
       renderCard_(d);
-      // Switch to Tìm KH tab
       document.querySelectorAll('.zai-tab')[0].click();
     } catch(e) { showError('Lỗi kết nối: ' + e.message); document.getElementById('zai-card').textContent=''; }
   }
 
-  // ── RENDER CARD ──
   function renderCard_(d) {
     _currentPhone = d.phone || '';
     _currentCustData = d;
@@ -352,7 +321,6 @@
       (c.note?'<div>📝 <b>Ghi chú:</b> '+escHtml(c.note)+'</div>':'')+
       '</div>';
 
-    // Auto-fill update form
     const st = document.getElementById('zai-status-sel');
     if (st) st.value = c.status || '';
     const zl = document.getElementById('zai-zalo-sel');
@@ -371,13 +339,11 @@
     if (nt) nt.value = '';
   }
 
-  // ── SAVE STATUS ──
   async function doSaveStatus_() {
     if (!_currentPhone) { showError('Chưa tìm khách hàng'); return; }
     if (!GAS_URL) { showError('Chưa cài GAS URL'); return; }
     hideError();
     const c = (_currentCustData && _currentCustData.care) || {};
-    // Build timestamp prefix for note
     const noteVal = (document.getElementById('zai-note')||{}).value || '';
     let noteFinal = c.note || '';
     if (noteVal.trim()) {
@@ -418,13 +384,11 @@
       const d = await r.json();
       if (d.ok) {
         showMsg('zai-save-msg','✓ Đã lưu!', 2500);
-        // Update cache + re-render
         if (_lookupCache[_currentPhone]) {
           const care = Object.assign({}, (_lookupCache[_currentPhone].data.care||{}), payload);
           _lookupCache[_currentPhone].data.care = care;
           _currentCustData = _lookupCache[_currentPhone].data;
         }
-        // Clear note field after save
         const nt = document.getElementById('zai-note'); if (nt) nt.value='';
       } else {
         showMsg('zai-save-msg','⚠ Lỗi lưu: '+(d.error||'unknown'),3000);
@@ -433,7 +397,6 @@
     if (btn) btn.disabled = false;
   }
 
-  // ── AI ──
   async function doAI_() {
     const msg = (document.getElementById('zai-msg')||{}).value || '';
     if (!msg.trim()) return;
@@ -442,9 +405,7 @@
     if (btn) btn.disabled = true;
     const resp = document.getElementById('zai-ai-resp');
     if (resp) resp.textContent = 'Đang tư vấn...';
-    // Save chat history for AI context
     _chatHistory.push({role:'user', content: msg});
-    // Render history tab
     renderHistoryTab_();
     try {
       const sep = GAS_URL.includes('?') ? '&' : '?';
@@ -456,7 +417,7 @@
           customerData: _currentCustData,
           message: msg,
           tone: _activeTone,
-          history: _chatHistory.slice(-10) // last 10 messages for context
+          history: _chatHistory.slice(-10)
         })
       });
       const d = await r.json();
@@ -482,12 +443,10 @@
       (m.role==='user'?'KH':'AI')+':</b> '+escHtml(m.content)+'</div>'
     ).join('');
     list.scrollTop = list.scrollHeight;
-    // Also update hist-box in AI tab
     const hb = document.getElementById('zai-hist-box');
     if (hb) hb.innerHTML = list.innerHTML;
   }
 
-  // ── WATCH ZALO CHAT ──
   function watchZaloChat() {
     let lastMsg = '';
     setInterval(() => {
@@ -497,17 +456,14 @@
       const txt = (last.textContent || '').trim();
       if (!txt || txt === lastMsg) return;
       lastMsg = txt;
-      // Update AI tab message box with latest customer message
       const aiMsg = document.getElementById('zai-msg');
       if (aiMsg && !aiMsg.value) aiMsg.value = txt;
-      // Push to chat history (avoid dups)
       if (!_chatHistory.length || _chatHistory[_chatHistory.length-1].content !== txt) {
         _chatHistory.push({role:'user', content: txt});
         renderHistoryTab_();
       }
     }, 2000);
 
-    // Also intercept React-based message sends
     document.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         const inp = e.target;
@@ -522,7 +478,6 @@
     }, true);
   }
 
-  // ── DATE UTILS ──
   function formatDate_(s) {
     if (!s) return '—';
     if (String(s).includes('T')) {
@@ -554,7 +509,6 @@
     return m ? m[1] : '';
   }
 
-  // ── CLEAR FORM ──
   function clearForm_() {
     ['zai-status-sel','zai-zalo-sel','zai-kh-status-sel'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
@@ -568,7 +522,6 @@
     });
   }
 
-  // ── UI HELPERS ──
   function showError(msg) { const el=document.getElementById('zai-error'); if(el){ el.textContent=msg; el.style.display=''; } }
   function hideError()    { const el=document.getElementById('zai-error'); if(el) el.style.display='none'; }
   function showMsg(id,msg,ms) { const el=document.getElementById(id); if(!el) return; el.textContent=msg; if(ms) setTimeout(()=>{el.textContent='';},ms); }
@@ -619,7 +572,6 @@
       const henDate = rem.schedHen ? new Date(rem.schedHen) : null;
       if (henDate) henDate.setHours(0,0,0,0);
       const isOverdue = henDate && henDate < today;
-      // Phone copy button
       const phoneBtn = document.createElement('button');
       phoneBtn.textContent = '📋 ' + rem.phone;
       phoneBtn.title = 'Bấm để copy số';
@@ -630,14 +582,12 @@
         phoneBtn.textContent = '✓ đã copy';
         setTimeout(() => { phoneBtn.textContent = orig; }, 1200);
       });
-      // Tag + note
       const note = document.createElement('span');
       note.style.cssText = 'flex:1;font-size:10px;color:#7f1d1d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;';
       note.title = rem.schedHenNote || '';
       const tagColor = isOverdue ? '#ef4444' : '#f97316';
       const tagText = isOverdue ? 'Quá hạn' : 'Hôm nay';
       note.innerHTML = '<span style="background:'+tagColor+';color:#fff;border-radius:2px;padding:0 3px;font-size:9px;margin-right:3px;">'+tagText+'</span>' + escHtml(rem.schedHenNote || '—');
-      // Mở KH → appweb
       const openBtn = document.createElement('button');
       openBtn.textContent = 'Mở KH';
       openBtn.style.cssText = 'background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:10px;flex-shrink:0;';
@@ -645,7 +595,6 @@
         navigator.clipboard.writeText(rem.phone).catch(()=>{});
         window.open('https://duyenhoang91tl-lab.github.io/teamduyen/?phone=' + encodeURIComponent(rem.phone), '_blank');
       });
-      // Done
       const doneBtn = document.createElement('button');
       doneBtn.textContent = '✓ Done';
       doneBtn.style.cssText = 'background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:10px;flex-shrink:0;';
@@ -710,7 +659,6 @@
       let list = [];
       if (d.value) { try { list = JSON.parse(d.value); } catch(e) {} }
       _zaloNickList = Array.isArray(list) ? list : [];
-      // Rebuild sticky nick dropdown
       const nzSel = document.getElementById('zai-nz-sel');
       if (nzSel) {
         nzSel.innerHTML = '<option value="">— Chọn nick —</option>';
@@ -719,15 +667,12 @@
         });
         if (_currentZaloNick) nzSel.value = _currentZaloNick;
       }
-      // Sync hidden form nick input
       const nzF = document.getElementById('zai-nz-form-sel');
       if (nzF) nzF.value = _currentZaloNick || '';
     } catch(e) {}
   }
 
-  // ── INIT ──
   async function init() {
-    // Load saved config
     chrome.storage.local.get(['ome_gas_url','ome_current_cs','ome_current_nz'], data => {
       if (data.ome_gas_url) {
         GAS_URL = data.ome_gas_url;
@@ -755,9 +700,9 @@
       }
     });
     buildPanel();
+    watchZaloChat();
   }
 
-  // ── STYLE ──
   const style = document.createElement('style');
   style.textContent = `
     #ome-zai-toggle {
@@ -847,9 +792,7 @@
     const phone = extractPhoneFromZalo();
     if (phone) {
       const inp = document.getElementById('zai-phone');
-      if (inp && !inp.value) {
-        inp.value = phone;
-      }
+      if (inp && !inp.value) inp.value = phone;
     }
   }
 
@@ -876,7 +819,6 @@
     return result;
   };
 
-  // ── MUTATION OBSERVER for Zalo SPA navigation ──
   let _lastConvId = '';
   const _navObserver = new MutationObserver(() => {
     const match = location.pathname.match(/\/([0-9]+)(?:\/|$)/);
