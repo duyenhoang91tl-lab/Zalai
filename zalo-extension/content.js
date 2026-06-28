@@ -604,63 +604,82 @@
       if (csBar && csBar.nextSibling) host.insertBefore(panel, csBar.nextSibling);
       else host.insertBefore(panel, host.firstChild);
     }
-    const toggle = document.getElementById('ome-zai-toggle');
+    const toggleBtn = document.getElementById('ome-zai-toggle');
     if (!reminders || !reminders.length) {
       panel.style.display = 'none';
-      if (toggle) toggle.style.boxShadow = '';
+      if (toggleBtn) toggleBtn.style.boxShadow = '';
       return;
     }
-    if (toggle) toggle.style.boxShadow = '0 0 0 3px #ef4444';
+    if (toggleBtn) toggleBtn.style.boxShadow = '0 0 0 3px #ef4444';
     panel.style.display = '';
     const today = new Date(); today.setHours(0,0,0,0);
-    panel.innerHTML = '<div style="padding:6px 10px;background:#fca5a5;color:#7f1d1d;font-weight:bold;display:flex;justify-content:space-between;align-items:center;">'+
-      '<span>🔔 ' + reminders.length + ' lịch hẹn cần xử lý</span>'+
-      '<span id="zai-remind-toggle" style="cursor:pointer;font-size:13px;">▲</span></div>'+
-      '<div id="zai-remind-list" style="max-height:200px;overflow-y:auto;"></div>';
+    panel.innerHTML =
+      '<div style="padding:5px 10px;background:#fca5a5;color:#7f1d1d;font-weight:bold;display:flex;justify-content:space-between;align-items:center;">'+
+      '<span>🔔 ' + reminders.length + ' lịch hẹn</span>'+
+      '<span id="zai-remind-toggle" style="cursor:pointer;font-size:11px;user-select:none;">▲ thu gọn</span></div>'+
+      '<div id="zai-remind-list" style="max-height:180px;overflow-y:auto;"></div>';
     const list = panel.querySelector('#zai-remind-list');
     reminders.forEach(rem => {
       const item = document.createElement('div');
-      item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 10px;border-bottom:1px solid #fecaca;';
-      item.dataset.phone = rem.phone;
+      item.style.cssText = 'display:flex;align-items:center;gap:4px;padding:4px 8px;border-bottom:1px solid #fecaca;';
       const henDate = rem.schedHen ? new Date(rem.schedHen) : null;
-      henDate && henDate.setHours(0,0,0,0);
+      if (henDate) henDate.setHours(0,0,0,0);
       const isOverdue = henDate && henDate < today;
-      const tag = isOverdue
-        ? '<span style="background:#ef4444;color:#fff;border-radius:3px;padding:1px 4px;">Quá hạn</span>'
-        : '<span style="background:#f97316;color:#fff;border-radius:3px;padding:1px 4px;">Hôm nay</span>';
-      item.innerHTML = tag +
-        '<span style="flex:1"><b>' + escHtml(rem.phone) + '</b>' + (rem.schedHenNote ? ' — ' + escHtml(rem.schedHenNote) : '') + '</span>' +
-        '<button class="zai-rem-open" style="background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 7px;cursor:pointer;font-size:10px;">Mở KH</button>' +
-        '<button class="zai-rem-done" style="background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 7px;cursor:pointer;font-size:10px;">✓ Done</button>';
-      item.querySelector('.zai-rem-open').addEventListener('click', () => {
-        // Fill phone + lookup in panel
-        const inp = document.getElementById('zai-phone');
-        if (inp) inp.value = rem.phone;
-        // Show panel if hidden
-        const p = document.getElementById('ome-zai-panel');
-        if (p) p.style.display = '';
-        doLookup_();
-        // Switch to Cập nhật tab after lookup
-        setTimeout(() => {
-          const tabs = document.querySelectorAll('.zai-tab');
-          if (tabs[1]) tabs[1].click();
-        }, 600);
+      // Phone copy button
+      const phoneBtn = document.createElement('button');
+      phoneBtn.textContent = '📋 ' + rem.phone;
+      phoneBtn.title = 'Bấm để copy số';
+      phoneBtn.style.cssText = 'background:#fff;border:1px solid #fca5a5;border-radius:3px;padding:1px 5px;cursor:pointer;font-size:10px;font-family:monospace;white-space:nowrap;flex-shrink:0;';
+      phoneBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(rem.phone).catch(()=>{});
+        const orig = phoneBtn.textContent;
+        phoneBtn.textContent = '✓ đã copy';
+        setTimeout(() => { phoneBtn.textContent = orig; }, 1200);
       });
-      item.querySelector('.zai-rem-done').addEventListener('click', async (e) => {
-        e.currentTarget.disabled = true;
+      // Tag + note
+      const note = document.createElement('span');
+      note.style.cssText = 'flex:1;font-size:10px;color:#7f1d1d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;';
+      note.title = rem.schedHenNote || '';
+      const tagColor = isOverdue ? '#ef4444' : '#f97316';
+      const tagText = isOverdue ? 'Quá hạn' : 'Hôm nay';
+      note.innerHTML = '<span style="background:'+tagColor+';color:#fff;border-radius:2px;padding:0 3px;font-size:9px;margin-right:3px;">'+tagText+'</span>' + escHtml(rem.schedHenNote || '—');
+      // Mở KH → appweb
+      const openBtn = document.createElement('button');
+      openBtn.textContent = 'Mở KH';
+      openBtn.style.cssText = 'background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:10px;flex-shrink:0;';
+      openBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(rem.phone).catch(()=>{});
+        window.open('https://duyenhoang91tl-lab.github.io/teamduyen/?phone=' + encodeURIComponent(rem.phone), '_blank');
+      });
+      // Done
+      const doneBtn = document.createElement('button');
+      doneBtn.textContent = '✓ Done';
+      doneBtn.style.cssText = 'background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:10px;flex-shrink:0;';
+      doneBtn.addEventListener('click', async () => {
+        doneBtn.disabled = true;
         await doneReminder_(rem.phone);
         item.style.opacity = '0.4';
-        setTimeout(() => item.remove(), 800);
-        if (!list.children.length) {
-          panel.style.display = 'none';
-          if (toggle) toggle.style.boxShadow = '';
-        }
+        setTimeout(() => {
+          item.remove();
+          if (!list.children.length) {
+            panel.style.display = 'none';
+            if (toggleBtn) toggleBtn.style.boxShadow = '';
+          }
+        }, 700);
       });
+      item.appendChild(phoneBtn);
+      item.appendChild(note);
+      item.appendChild(openBtn);
+      item.appendChild(doneBtn);
       list.appendChild(item);
     });
     panel.querySelector('#zai-remind-toggle').addEventListener('click', () => {
       const l = panel.querySelector('#zai-remind-list');
-      if (l) { l.style.display = l.style.display==='none' ? '' : 'none'; }
+      const tog = panel.querySelector('#zai-remind-toggle');
+      if (!l) return;
+      const hidden = l.style.display === 'none';
+      l.style.display = hidden ? '' : 'none';
+      if (tog) tog.textContent = hidden ? '▲ thu gọn' : '▼ mở rộng';
     });
   }
 
