@@ -1,5 +1,5 @@
-// OME Zalo AI Helper - content script v14.4
-// v14.4: them nut Goi Zalo (tu gui), fix date parse, fix emoticon -heart
+// OME Zalo AI Helper - content script v14.5
+// v14.5: fix ISO date timezone, send Zalo React event, load CS tu GAS
 (function () {
   'use strict';
 
@@ -19,9 +19,9 @@
     'Kcnc/Không hiệu quả','Đặt hộ/Sai số','Bầu'
   ];
   const ZALO_STATUSES = ['','Đã kết bạn','Chưa kết bạn','Đã chặn','Không có Zalo'];
-  const CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt'];
+  let CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt']; // fallback, se load tu GAS
 
-  // BUILD PANEL
+  // ── BUILD PANEL ──
   function buildPanel() {
     if (document.getElementById('ome-zai-panel')) return;
 
@@ -56,7 +56,7 @@
     const body = document.createElement('div');
     body.className = 'zai-body'; body.id = 'zai-body';
 
-    // 1. PHONE
+    // ── 1. PHONE ──
     addEl(body, 'div', {className:'zai-section-label', textContent:'Số điện thoại khách'});
     const phoneRow = addEl(body, 'div', {className:'zai-phone-row'});
     addEl(phoneRow, 'input', {id:'zai-phone-input', type:'tel', placeholder:'0901234567'});
@@ -65,7 +65,7 @@
 
     body.appendChild(Object.assign(document.createElement('hr'), {className:'zai-div'}));
 
-    // 2. AI SECTION
+    // ── 2. AI SECTION (len tren) ──
     const aiWrap = addEl(body, 'div', {});
     const tonesDiv = addEl(aiWrap, 'div', {className:'zai-tones', style:'margin-bottom:8px'});
     ['Thân thiện','Chuyên nghiệp','Ngắn gọn','Nhiệt tình'].forEach((t,i) => {
@@ -75,17 +75,21 @@
     addEl(aiWrap, 'button', {className:'zai-btn zai-btn-secondary', id:'zai-open-btn',
       textContent:'💬 Tạo TN mở đầu (dựa lịch sử mua)', style:'width:100%;margin-bottom:8px'});
 
+    // Grab row
     const msgHdr = addEl(aiWrap, 'div', {style:'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px'});
     addEl(msgHdr, 'div', {className:'zai-section-label', style:'margin:0', textContent:'Tin nhắn khách'});
     addEl(msgHdr, 'button', {className:'zai-btn zai-btn-ghost zai-btn-sm', id:'zai-grab-btn',
       textContent:'📥 Lấy TN', title:'Tự động lấy 100 tin nhắn gần nhất của khách'});
 
+    // History status (hien thi sau khi grab, co link xem)
     const histStatus = addEl(aiWrap, 'div', {id:'zai-hist-status', style:'font-size:11px;color:#6b7280;margin-bottom:4px;display:none'});
 
+    // Textarea (an mac dinh, chi hien khi bam "Xem")
     const msgTa = addEl(aiWrap, 'textarea', {className:'zai-msg-area', id:'zai-msg',
       placeholder:'Dán thủ công nếu cần...'});
     msgTa.style.display = 'none';
 
+    // Nguyen canh input
     addEl(aiWrap, 'div', {style:'margin-top:5px;font-size:11px;color:#6b7280', textContent:'Ngữ cảnh / Sản phẩm (tuỳ chọn)'});
     addEl(aiWrap, 'input', {className:'zai-ctx-input', id:'zai-ctx', placeholder:'VD: khách hỏi về giá, muốn mua thêm...'});
     addEl(aiWrap, 'button', {className:'zai-btn zai-btn-primary', id:'zai-gen-btn',
@@ -96,7 +100,7 @@
 
     body.appendChild(Object.assign(document.createElement('hr'), {className:'zai-div'}));
 
-    // 3. UPDATE SECTION (tren)
+    // ── 3. UPDATE SECTION (tren) ──
     const upd = addEl(body, 'div', {className:'zai-update-section', id:'zai-update-section'});
     upd.style.display = 'none';
     addEl(upd, 'div', {className:'zai-section-label', style:'margin-bottom:8px', textContent:'📋 Cập nhật thông tin CS'});
@@ -132,13 +136,13 @@
     addEl(saveRow, 'button', {className:'zai-btn zai-btn-primary zai-btn-sm', id:'zai-save-btn', textContent:'💾 Lưu về GSheet'});
     addEl(saveRow, 'span', {className:'zai-save-status', id:'zai-save-status'});
 
-    // 4. CUSTOMER CARD (duoi cung)
+    // ── 4. CUSTOMER CARD (duoi cung) ──
     addEl(body, 'div', {id:'zai-cust-area'});
 
     panel.appendChild(body);
     document.body.appendChild(panel);
 
-    // EVENTS
+    // ── EVENTS ──
     cfgBtn.addEventListener('click', () => { _cfgVisible = !_cfgVisible; cfg.style.display = _cfgVisible ? 'block' : 'none'; });
     saveBtn.addEventListener('click', saveConfig);
     document.getElementById('zai-lookup-btn').addEventListener('click', doLookup);
@@ -153,7 +157,7 @@
     });
     chrome.storage.local.get(['ome_gas_url'], (res) => {
       GAS_URL = res.ome_gas_url || '';
-      if (GAS_URL) inpGas.value = GAS_URL;
+      if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); }
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
     });
   }
@@ -192,6 +196,7 @@
     _cfgVisible = false;
     document.getElementById('zai-cfg').style.display = 'none';
     _lookupCache = {};
+    loadCSNames_();
     if (!key) showMsg('zai-save-status','✓ Đã lưu cài đặt',2000);
   }
 
@@ -247,7 +252,9 @@
     setInterval(check, 1500);
   }
 
-  // GRAB TIN NHAN KHACH
+  // ── GRAB TIN NHẮN KHÁCH ──
+
+  // Lay text thuan, bo qua <img> (Zalo render emoticon thanh img)
   function getTextOnly_(el) {
     let t = '';
     for (const node of el.childNodes) {
@@ -259,10 +266,15 @@
 
   function stripText_(text) {
     return text
+      // Xoa timestamp noi tuyen vi du "20:23" gan sat chu
       .replace(/\d{1,2}:\d{2}/g, '')
+      // Zalo text emoticon dang /-heart/ hoac /-heart (co slash cuoi hoac khong)
       .replace(/\/-[\w-]+\/?/g, '')
+      // Emoticon alt text dang -heart -strong (khong co slash dau)
       .replace(/(^|\s)-[a-z][\w-]*/gi, '$1')
+      // Text emoticons ASCII
       .replace(/:-?[hH]|:-?[)(DdPpOo><]|:[vV3]|=\)+|\^{2,}|>:<|:\*/g, '')
+      // Unicode emoji
       .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
       .replace(/[\u{2600}-\u{27BF}]/gu, '')
       .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
@@ -328,7 +340,10 @@
 
     if (last100.length) {
       _chatHistory = last100;
+      // Dien vao textarea (an) de du phong
       if (msgTa) msgTa.value = last100.join('\n---\n');
+
+      // Hien thi trang thai + nut xem
       if (histStatus) {
         _histVisible = false;
         if (msgTa) msgTa.style.display = 'none';
@@ -348,7 +363,7 @@
     }
   }
 
-  // LOOKUP
+  // ── LOOKUP ──
   async function doLookup() {
     const raw = (document.getElementById('zai-phone-input').value||'').trim();
     if (!raw) { showError('Vui lòng nhập số điện thoại.'); return; }
@@ -444,7 +459,7 @@
     document.getElementById('zai-note-ta').value    = care&&care.note||'';
   }
 
-  // SAVE STATUS
+  // ── SAVE STATUS ──
   async function doSaveStatus() {
     if (!_currentCustData) { showError('Chưa tra cứu khách nào.'); return; }
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS.'); return; }
@@ -476,7 +491,7 @@
     finally { btn.disabled=false; btn.textContent='💾 Lưu về GSheet'; }
   }
 
-  // BUILD CUST LINES cho AI
+  // ── BUILD CUST LINES cho AI ──
   function buildCustLines() {
     if (!_currentCustData) return [];
     const {name, phone, care, orders} = _currentCustData;
@@ -512,6 +527,7 @@
 
   async function doGenerate() {
     if (!GAS_URL) { showError('Chưa cài đặt URL GAS.'); return; }
+    // Uu tien _chatHistory, fallback textarea
     const histText = _chatHistory.length ? _chatHistory.join('\n---\n') : '';
     const taText   = (document.getElementById('zai-msg').value||'').trim();
     const msg = histText || taText;
@@ -535,7 +551,7 @@
       if (!data.ok) throw new Error(data.error||'GAS lỗi');
       const text = (data.text||'').trim();
       sug.innerHTML='';
-      addEl(sug,'div',{className:'zai-section-label',textContent:'💡 Gợi ý — sửa nếu cần rồi gởi'});
+      addEl(sug,'div',{className:'zai-section-label',textContent:'💡 Gợi ý — sửa nếu cần rồi copy/lưu'});
 
       const ta = addEl(sug,'textarea',{id:'zai-sug-edit', rows:4});
       ta.style.cssText='width:100%;box-sizing:border-box;font-size:12px;padding:8px;border:1px solid #d1d5db;border-radius:6px;resize:vertical;margin-top:4px;font-family:inherit';
@@ -621,18 +637,20 @@
     } catch(e) { showError('Lỗi: '+e.message); btn.disabled=false; btn.textContent='💾 Lưu mẫu'; }
   }
 
-  // DATE HELPERS
+  // ── DATE HELPERS ──
   function parseDate_(d) {
     if (!d) return 0;
     if (typeof d==='number') return (d - 25569) * 86400000;
     const s = String(d).trim();
-    // DD/MM/YYYY (dinh dang Viet Nam tu GAS)
+    // Full ISO with time (e.g. GAS Date object -> "2026-04-17T17:00:00.000Z")
+    // Must use new Date() to preserve timezone offset correctly
+    if (s.includes('T')) { const dt=new Date(s); return isNaN(dt)?0:dt.getTime(); }
+    // DD/MM/YYYY (dinh dang Viet Nam tu GAS Utilities.formatDate)
     const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (m1) return new Date(+m1[3],+m1[2]-1,+m1[1]).getTime();
-    // YYYY-MM-DD (ISO)
+    // YYYY-MM-DD (ISO date only, no timezone shift needed)
     const m2 = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
     if (m2) return new Date(+m2[1],+m2[2]-1,+m2[3]).getTime();
-    // GAS Date.toString() fallback
     const dt = new Date(s);
     return isNaN(dt) ? 0 : dt.getTime();
   }
@@ -651,6 +669,28 @@
   function hideError()    { const el=document.getElementById('zai-error'); if(el) el.style.display='none'; }
   function showMsg(id,msg,ms) { const el=document.getElementById(id); if(!el) return; el.textContent=msg; if(ms) setTimeout(()=>{el.textContent='';},ms); }
   function escHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function loadCSNames_() {
+    if (!GAS_URL) return;
+    try {
+      const sep = GAS_URL.includes('?') ? '&' : '?';
+      const r = await fetch(GAS_URL + sep + 'action=users', {redirect:'follow'});
+      const d = await r.json();
+      if (d.users && d.users.length) {
+        const active = d.users.filter(u => u.active !== false);
+        const names = ['', ...active.map(u => u.username||u.name).filter(Boolean)];
+        CS_NAMES = names;
+        // Cap nhat dropdown neu da render
+        const sel = document.getElementById('zai-cs-sel');
+        if (sel) {
+          const cur = sel.value;
+          sel.innerHTML = '';
+          CS_NAMES.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s||'— Chọn CS —'; sel.appendChild(o); });
+          if (cur) sel.value = cur;
+        }
+      }
+    } catch(e) {}
+  }
 
   function init() { buildPanel(); watchZaloChat(); }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
