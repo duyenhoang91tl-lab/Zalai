@@ -1,5 +1,5 @@
-// OME Zalo AI Helper - content script v14.5
-// v14.5: fix ISO date timezone, send Zalo React event, load CS tu GAS
+// OME Zalo AI Helper - content script v14.6
+// v14.6: persistent CS selector, auto-timestamp ghi chu, CS sticky
 (function () {
   'use strict';
 
@@ -11,6 +11,7 @@
   let _cfgVisible = false;
   let _chatHistory = []; // luu tin nhan khach, khong hien thi trong textarea
   let _histVisible = false;
+  let _currentCS = ''; // CS dang dung, luu vao chrome.storage
 
   const LOOKUP_TTL = 5 * 60 * 1000;
   const CARE_STATUSES = [
@@ -51,6 +52,24 @@
     const saveBtn = addEl(cfg, 'button', {className:'zai-cfg-save', id:'zai-cfg-save', textContent:'💾 Lưu cài đặt'});
     addEl(cfg, 'div', {className:'zai-cfg-hint', textContent:'Key Groq được lưu vào Google Sheets, dùng chung cho cả team.'});
     panel.appendChild(cfg);
+
+    // CS sticky bar
+    const csBar = document.createElement('div');
+    csBar.id = 'zai-cs-bar';
+    csBar.style.cssText = 'background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:7px 14px;display:flex;align-items:center;gap:8px;font-size:12px;';
+    csBar.innerHTML = '<span style="color:#166534;font-weight:700;white-space:nowrap">👤 CS:</span>';
+    const csBarSel = document.createElement('select');
+    csBarSel.id = 'zai-cs-bar-sel';
+    csBarSel.style.cssText = 'flex:1;font-size:12px;padding:3px 6px;border:1px solid #86efac;border-radius:6px;background:#fff;color:#166534;font-weight:600;';
+    ['','duyenht','dieptn','thaomt','vanntt'].forEach(s => {
+      const o = document.createElement('option'); o.value=s; o.textContent=s||'-- Chọn CS --'; csBarSel.appendChild(o);
+    });
+    csBar.appendChild(csBarSel);
+    const csBarHint = document.createElement('span');
+    csBarHint.id = 'zai-cs-bar-hint';
+    csBarHint.style.cssText = 'font-size:10px;color:#15803d;';
+    csBar.appendChild(csBarHint);
+    panel.appendChild(csBar);
 
     // Body
     const body = document.createElement('div');
@@ -155,10 +174,24 @@
       tonesDiv.querySelectorAll('.zai-tone').forEach(b => b.classList.remove('active'));
       tb.classList.add('active'); _activeTone = tb.dataset.tone;
     });
-    chrome.storage.local.get(['ome_gas_url'], (res) => {
+    chrome.storage.local.get(['ome_gas_url','ome_current_cs'], (res) => {
       GAS_URL = res.ome_gas_url || '';
       if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); }
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
+      _currentCS = res.ome_current_cs || '';
+      if (_currentCS) {
+        csBarSel.value = _currentCS;
+        csBarHint.textContent = 'tự động áp dụng';
+      }
+    });
+    csBarSel.addEventListener('change', () => {
+      _currentCS = csBarSel.value;
+      chrome.storage.local.set({ ome_current_cs: _currentCS });
+      csBarHint.textContent = _currentCS ? 'đã lưu' : '';
+      setTimeout(() => { csBarHint.textContent = _currentCS ? 'tự động áp dụng' : ''; }, 1500);
+      // Cap nhat dropdown CS trong form neu dang mo
+      const csSel = document.getElementById('zai-cs-sel');
+      if (csSel) csSel.value = _currentCS;
     });
   }
 
@@ -417,8 +450,10 @@
   }
 
   function clearForm_() {
-    ['zai-status-sel','zai-zalo-sel','zai-cs-sel','zai-hen-date','zai-hen-note','zai-note-ta']
+    ['zai-status-sel','zai-zalo-sel','zai-hen-date','zai-hen-note','zai-note-ta']
       .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const csSel = document.getElementById('zai-cs-sel');
+    if (csSel) csSel.value = _currentCS || '';
   }
 
   function renderCard_(area, updSec, phone, raw, care, orders) {
@@ -453,7 +488,7 @@
     updSec.style.display = 'block';
     document.getElementById('zai-status-sel').value = care&&care.status||'';
     document.getElementById('zai-zalo-sel').value   = care&&care.zalo||'';
-    document.getElementById('zai-cs-sel').value     = care&&care.cs||'';
+    document.getElementById('zai-cs-sel').value     = care&&care.cs||_currentCS||'';
     document.getElementById('zai-hen-date').value   = care&&care.schedHen ? toInputDate_(care.schedHen) : '';
     document.getElementById('zai-hen-note').value   = care&&care.schedHenNote||'';
     document.getElementById('zai-note-ta').value    = care&&care.note||'';
@@ -468,11 +503,22 @@
     const cs      = document.getElementById('zai-cs-sel').value;
     const henDate = document.getElementById('zai-hen-date').value;
     const henNote = document.getElementById('zai-hen-note').value.trim();
-    const note    = document.getElementById('zai-note-ta').value;
+    const care    = (_currentCustData && _currentCustData.care) || null;
+    const rawNote = document.getElementById('zai-note-ta').value.trim();
+    const usedCS  = cs || (care && care.cs) || _currentCS || '';
+    const now     = new Date();
+    const stamp   = '[' + ('0'+now.getDate()).slice(-2) + '/' + ('0'+(now.getMonth()+1)).slice(-2) +
+                    ' ' + ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2) +
+                    (usedCS ? ' - ' + usedCS : '') + ']';
+    const origNote = (care && care.note) || '';
+    // Chi them timestamp neu note moi khac note cu
+    const note = rawNote && rawNote !== origNote
+      ? stamp + ' ' + rawNote
+      : rawNote;
     const btn    = document.getElementById('zai-save-btn');
     btn.disabled = true; btn.textContent = 'Đang lưu...';
     try {
-      const c = _currentCustData.care||{};
+      const c = care||{};
       const row = {
         phone:_currentCustData.phone, status:status||c.status||'',
         zalo:zalo||c.zalo||'', cs:cs||c.cs||'', note,
