@@ -1,5 +1,5 @@
-// OME Zalo AI Helper - content script v14.6
-// v14.6: persistent CS selector, auto-timestamp ghi chu, CS sticky
+// OME Zalo AI Helper - content script v14.7
+// v14.7: Nick Zalo selector, Trang thai KH, reminder polling, extended ZALO_STATUSES
 (function () {
   'use strict';
 
@@ -12,6 +12,8 @@
   let _chatHistory = []; // luu tin nhan khach, khong hien thi trong textarea
   let _histVisible = false;
   let _currentCS = ''; // CS dang dung, luu vao chrome.storage
+  let _currentZaloNick = ''; // Nick Zalo CS dang dung, sticky
+  let _zaloNickList = []; // danh sach nick tu GAS
 
   const LOOKUP_TTL = 5 * 60 * 1000;
   const CARE_STATUSES = [
@@ -19,7 +21,14 @@
     'Knm/Máy bận','Cúp ngang','Thuê bao','Phân vân/Tiềm năng','Chốt',
     'Kcnc/Không hiệu quả','Đặt hộ/Sai số','Bầu'
   ];
-  const ZALO_STATUSES = ['','Đã kết bạn','Chưa kết bạn','Đã chặn','Không có Zalo'];
+  const ZALO_STATUSES = ['','Đã kết bạn','Chưa kết bạn','Chưa đồng ý','Không nhận tn lạ','Chặn','Hủy kết bạn','Không tìm thấy zl','ZL NHD/K có','Zalo ngừng hd'];
+  const CUST_STATUS_OPTS = [
+  '','1. Không thể kết nối',
+  '2.1 Không hiệu quả','2.2 Hiệu quả','2.3 Chưa rõ tác dụng',
+  '3. Chưa dùng',
+  '4.1 Không hiệu quả','4.2 Đã có kết quả','4.3 Đã đổi sang sản phẩm khác',
+  '5. Đang tạm dừng','6. Nhận hộ / Sai số','7. Ngang Cúp','8. Từ chối'
+];
   let CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt']; // fallback, se load tu GAS
 
   // ── BUILD PANEL ──
@@ -56,19 +65,36 @@
     // CS sticky bar
     const csBar = document.createElement('div');
     csBar.id = 'zai-cs-bar';
-    csBar.style.cssText = 'background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:7px 14px;display:flex;align-items:center;gap:8px;font-size:12px;';
-    csBar.innerHTML = '<span style="color:#166534;font-weight:700;white-space:nowrap">👤 CS:</span>';
+    csBar.style.cssText = 'background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:7px 14px;font-size:12px;';
+    const csRow = document.createElement('div');
+    csRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    csRow.innerHTML = '<span style="color:#166534;font-weight:700;white-space:nowrap">👤 CS:</span>';
     const csBarSel = document.createElement('select');
     csBarSel.id = 'zai-cs-bar-sel';
     csBarSel.style.cssText = 'flex:1;font-size:12px;padding:3px 6px;border:1px solid #86efac;border-radius:6px;background:#fff;color:#166534;font-weight:600;';
     ['','duyenht','dieptn','thaomt','vanntt'].forEach(s => {
       const o = document.createElement('option'); o.value=s; o.textContent=s||'-- Chọn CS --'; csBarSel.appendChild(o);
     });
-    csBar.appendChild(csBarSel);
+    csRow.appendChild(csBarSel);
     const csBarHint = document.createElement('span');
     csBarHint.id = 'zai-cs-bar-hint';
     csBarHint.style.cssText = 'font-size:10px;color:#15803d;';
-    csBar.appendChild(csBarHint);
+    csRow.appendChild(csBarHint);
+    csBar.appendChild(csRow);
+    const nzRow = document.createElement('div');
+    nzRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:5px;border-top:1px solid #bbf7d0;padding-top:5px;';
+    nzRow.innerHTML = '<span style="color:#166534;font-weight:700;white-space:nowrap;font-size:12px">💬 Nick:</span>';
+    const nzSel = document.createElement('select');
+    nzSel.id = 'zai-nz-sel';
+    nzSel.style.cssText = 'flex:1;font-size:12px;padding:3px 6px;border:1px solid #86efac;border-radius:6px;background:#fff;color:#166534;';
+    const nzAddBtn = document.createElement('button');
+    nzAddBtn.id = 'zai-nz-add';
+    nzAddBtn.textContent = '＋';
+    nzAddBtn.title = 'Thêm nick mới';
+    nzAddBtn.style.cssText = 'background:#15803d;color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:13px;cursor:pointer;';
+    nzRow.appendChild(nzSel);
+    nzRow.appendChild(nzAddBtn);
+    csBar.appendChild(nzRow);
     panel.appendChild(csBar);
 
     // Body
@@ -140,6 +166,10 @@
     const csSel = addEl(upd, 'select', {id:'zai-cs-sel'});
     CS_NAMES.forEach(s => addEl(csSel, 'option', {value:s, textContent:s||'— Chọn CS —'}));
 
+    addEl(upd, 'label', {textContent:'Trạng thái KH'});
+    const khStatusSel = addEl(upd, 'select', {id:'zai-kh-status-sel'});
+    CUST_STATUS_OPTS.forEach(s => addEl(khStatusSel, 'option', {value:s, textContent:s||'— Chọn —'}));
+
     const row2 = addEl(upd, 'div', {className:'zai-field-row'});
     const col3 = addEl(row2, 'div', {className:'zai-field-col'});
     addEl(col3, 'label', {textContent:'Lịch hẹn'});
@@ -174,15 +204,37 @@
       tonesDiv.querySelectorAll('.zai-tone').forEach(b => b.classList.remove('active'));
       tb.classList.add('active'); _activeTone = tb.dataset.tone;
     });
-    chrome.storage.local.get(['ome_gas_url','ome_current_cs'], (res) => {
+    chrome.storage.local.get(['ome_gas_url','ome_current_cs','ome_current_nz'], (res) => {
       GAS_URL = res.ome_gas_url || '';
-      if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); }
+      if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); loadNickZaloList_(); }
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
       _currentCS = res.ome_current_cs || '';
       if (_currentCS) {
         csBarSel.value = _currentCS;
         csBarHint.textContent = 'tự động áp dụng';
       }
+      _currentZaloNick = res.ome_current_nz || '';
+      startReminderPoll_();
+    });
+    nzSel.addEventListener('change', () => {
+      _currentZaloNick = nzSel.value;
+      chrome.storage.local.set({ ome_current_nz: _currentZaloNick });
+    });
+    nzAddBtn.addEventListener('click', async () => {
+      const nick = (prompt('Nhập nick Zalo mới:') || '').trim();
+      if (!nick) return;
+      if (!_zaloNickList.includes(nick)) _zaloNickList.push(nick);
+      // Save via GAS setSetting
+      if (GAS_URL) {
+        try {
+          await fetch(GAS_URL, {method:'POST', body:JSON.stringify({action:'setSetting',key:'nickZaloList',value:JSON.stringify(_zaloNickList)}), headers:{'Content-Type':'text/plain'}});
+        } catch(e) {}
+      }
+      await loadNickZaloList_();
+      const nzSelEl = document.getElementById('zai-nz-sel');
+      if (nzSelEl) nzSelEl.value = nick;
+      _currentZaloNick = nick;
+      chrome.storage.local.set({ ome_current_nz: nick });
     });
     csBarSel.addEventListener('change', () => {
       _currentCS = csBarSel.value;
@@ -492,6 +544,7 @@
     document.getElementById('zai-hen-date').value   = care&&care.schedHen ? toInputDate_(care.schedHen) : '';
     document.getElementById('zai-hen-note').value   = care&&care.schedHenNote||'';
     document.getElementById('zai-note-ta').value    = care&&care.note||'';
+    document.getElementById('zai-kh-status-sel').value = care&&care.khStatus||'';
   }
 
   // ── SAVE STATUS ──
@@ -525,7 +578,13 @@
         schedules:c.schedules||'', schedGoi:c.schedGoi||'', schedGoiNote:c.schedGoiNote||'',
         schedSP:c.schedSP||'', schedSPNote:c.schedSPNote||'',
         schedCS:c.schedCS||'', schedCSNote:c.schedCSNote||'',
-        schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||''
+        schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||'',
+        khStatus: document.getElementById('zai-kh-status-sel').value || (c.khStatus||''),
+        nickZalos: (() => {
+          const existing = c.nickZalos || [];
+          if (_currentZaloNick && !existing.includes(_currentZaloNick)) return [...existing, _currentZaloNick];
+          return existing;
+        })()
       };
       const res = await fetch(GAS_URL, {method:'POST', body:JSON.stringify({action:'saveSingle',row}), headers:{'Content-Type':'text/plain'}});
       const d = await res.json();
@@ -715,6 +774,76 @@
   function hideError()    { const el=document.getElementById('zai-error'); if(el) el.style.display='none'; }
   function showMsg(id,msg,ms) { const el=document.getElementById(id); if(!el) return; el.textContent=msg; if(ms) setTimeout(()=>{el.textContent='';},ms); }
   function escHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function startReminderPoll_() {
+    if (!GAS_URL || !_currentCS) return;
+    // Request Web Notification permission
+    if (Notification && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+    async function checkReminders() {
+      if (!GAS_URL || !_currentCS) return;
+      try {
+        const sep = GAS_URL.includes('?') ? '&' : '?';
+        const r = await fetch(GAS_URL + sep + 'action=reminders&cs=' + encodeURIComponent(_currentCS), {redirect:'follow'});
+        const d = await r.json();
+        if (d.reminders && d.reminders.length) {
+          const count = d.reminders.length;
+          // In-panel badge
+          const toggle = document.getElementById('ome-zai-toggle');
+          if (toggle) toggle.style.boxShadow = '0 0 0 3px #ef4444';
+          // Show in-panel alert
+          const panel = document.getElementById('ome-zai-panel');
+          if (panel && !document.getElementById('zai-remind-alert')) {
+            const alert = document.createElement('div');
+            alert.id = 'zai-remind-alert';
+            alert.style.cssText = 'background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:8px 12px;font-size:11px;cursor:pointer;';
+            alert.innerHTML = '<b>🔔 ' + count + ' lịch hẹn cần xử lý hôm nay</b> — ' +
+              d.reminders.slice(0,2).map(r2 => r2.phone + (r2.schedHenNote?' ('+r2.schedHenNote+')':'')).join(', ') +
+              (count>2?'...':'') + ' <span style="float:right">✕</span>';
+            alert.addEventListener('click', () => alert.remove());
+            panel.insertBefore(alert, panel.children[2]||panel.firstChild);
+          }
+          // System notification
+          if (Notification && Notification.permission === 'granted') {
+            new Notification('OME: ' + count + ' lịch hẹn hôm nay', {
+              body: d.reminders.slice(0,3).map(r2 => r2.phone + (r2.schedHenNote?' - '+r2.schedHenNote:'')).join('\n'),
+              icon: ''
+            });
+          }
+        } else {
+          // Clear alert
+          const existing = document.getElementById('zai-remind-alert');
+          if (existing) existing.remove();
+          const toggle = document.getElementById('ome-zai-toggle');
+          if (toggle) toggle.style.boxShadow = '';
+        }
+      } catch(e) {}
+    }
+    checkReminders();
+    setInterval(checkReminders, 5 * 60 * 1000); // every 5 min
+  }
+
+  async function loadNickZaloList_() {
+    if (!GAS_URL) return;
+    try {
+      const sep = GAS_URL.includes('?') ? '&' : '?';
+      const r = await fetch(GAS_URL + sep + 'action=getSetting&key=nickZaloList', {redirect:'follow'});
+      const d = await r.json();
+      let list = [];
+      if (d.value) { try { list = JSON.parse(d.value); } catch(e) {} }
+      _zaloNickList = Array.isArray(list) ? list : [];
+      // Rebuild nzSel dropdown
+      const nzSel = document.getElementById('zai-nz-sel');
+      if (nzSel) {
+        nzSel.innerHTML = '<option value="">-- Chọn nick --</option>';
+        _zaloNickList.forEach(n => {
+          const o = document.createElement('option'); o.value=n; o.textContent=n; nzSel.appendChild(o);
+        });
+        if (_currentZaloNick) nzSel.value = _currentZaloNick;
+      }
+    } catch(e) {}
+  }
 
   async function loadCSNames_() {
     if (!GAS_URL) return;
