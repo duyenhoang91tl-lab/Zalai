@@ -95,16 +95,13 @@
     const p1 = document.createElement('div');
     p1.className = 'zai-pane';
     p1.innerHTML =
+      '<input type="hidden" id="zai-cs-sel"/>'+
+      '<input type="hidden" id="zai-nz-form-sel"/>'+
       '<div class="zai-frow"><label>Tình trạng CS</label>'+
       '<select id="zai-status-sel"><option value="">— Chọn —</option>'+
       CARE_STATUSES.map(s=>'<option>'+s+'</option>').join('')+'</select></div>'+
       '<div class="zai-frow"><label>Kết bạn Zalo</label>'+
       '<select id="zai-zalo-sel">'+ZALO_STATUSES.map(s=>'<option>'+s+'</option>').join('')+'</select></div>'+
-      '<div class="zai-frow"><label>CS chăm sóc</label>'+
-      '<select id="zai-cs-sel"><option value="">— Chọn —</option>'+
-      CS_NAMES.filter(Boolean).map(n=>'<option>'+n+'</option>').join('')+'</select></div>'+
-      '<div class="zai-frow"><label>Nick Zalo CS đang dùng</label>'+
-      '<select id="zai-nz-form-sel" style="flex:1;"><option value="">— Chọn nick —</option></select></div>'+
       '<div class="zai-frow"><label>Trạng thái KH</label>'+
       '<select id="zai-kh-status-sel">'+CUST_STATUS_OPTS.map(s=>'<option>'+s+'</option>').join('')+'</select></div>'+
       '<div class="zai-frow"><label>Lịch hẹn</label>'+
@@ -219,7 +216,7 @@
       csSel.addEventListener('change', () => {
         _currentCS = csSel.value;
         chrome.storage.local.set({ome_current_cs: _currentCS});
-        // Sync form cs selector
+        // Sync hidden cs input
         const fcs = document.getElementById('zai-cs-sel');
         if (fcs) fcs.value = _currentCS;
         startReminderPoll_();
@@ -232,7 +229,7 @@
       nzSel.addEventListener('change', () => {
         _currentZaloNick = nzSel.value;
         chrome.storage.local.set({ome_current_nz: _currentZaloNick});
-        // Sync form nick selector
+        // Sync hidden nick input
         const fnz = document.getElementById('zai-nz-form-sel');
         if (fnz) fnz.value = _currentZaloNick;
       });
@@ -256,14 +253,10 @@
               body: JSON.stringify({settingKey:'nickZaloList', settingValue: JSON.stringify(_zaloNickList)})
             }).catch(()=>{});
           }
-          // Rebuild dropdowns
+          // Rebuild sticky dropdown only (zai-nz-form-sel is hidden)
           const sel = document.getElementById('zai-nz-sel');
           if (sel) {
             const o = document.createElement('option'); o.value=nick; o.textContent=nick; sel.appendChild(o);
-          }
-          const formSel = document.getElementById('zai-nz-form-sel');
-          if (formSel) {
-            const o = document.createElement('option'); o.value=nick; o.textContent=nick; formSel.appendChild(o);
           }
         }
         // Auto-select
@@ -286,16 +279,18 @@
       const d = await r.json();
       if (d.users && d.users.length) {
         CS_NAMES = ['', ...d.users];
-        // Rebuild CS selectors
-        [document.getElementById('zai-cs-bar-sel'), document.getElementById('zai-cs-sel')].forEach(sel => {
-          if (!sel) return;
-          const cur = sel.value;
-          sel.innerHTML = '<option value="">— Chọn CS —</option>';
+        // Rebuild CS bar selector only (zai-cs-sel is hidden input)
+        const barSel = document.getElementById('zai-cs-bar-sel');
+        if (barSel) {
+          const cur = barSel.value;
+          barSel.innerHTML = '<option value="">— Chọn CS —</option>';
           d.users.forEach(u => {
-            const o = document.createElement('option'); o.value=u; o.textContent=u; sel.appendChild(o);
+            const o = document.createElement('option'); o.value=u; o.textContent=u; barSel.appendChild(o);
           });
-          sel.value = cur || _currentCS || '';
-        });
+          barSel.value = cur || _currentCS || '';
+        }
+        const hCS = document.getElementById('zai-cs-sel');
+        if (hCS) hCS.value = _currentCS || '';
       }
     } catch(e) {}
   }
@@ -530,7 +525,6 @@
   // ── DATE UTILS ──
   function formatDate_(s) {
     if (!s) return '—';
-    // Handle ISO string with time component (timezone-aware)
     if (String(s).includes('T')) {
       const dt = new Date(s);
       if (!isNaN(dt)) {
@@ -562,7 +556,7 @@
 
   // ── CLEAR FORM ──
   function clearForm_() {
-    ['zai-status-sel','zai-zalo-sel','zai-cs-sel','zai-kh-status-sel'].forEach(id => {
+    ['zai-status-sel','zai-zalo-sel','zai-kh-status-sel'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     const cs = document.getElementById('zai-cs-sel');
@@ -716,7 +710,7 @@
       let list = [];
       if (d.value) { try { list = JSON.parse(d.value); } catch(e) {} }
       _zaloNickList = Array.isArray(list) ? list : [];
-      // Rebuild nzSel dropdown
+      // Rebuild sticky nick dropdown
       const nzSel = document.getElementById('zai-nz-sel');
       if (nzSel) {
         nzSel.innerHTML = '<option value="">— Chọn nick —</option>';
@@ -725,14 +719,9 @@
         });
         if (_currentZaloNick) nzSel.value = _currentZaloNick;
       }
-      // Sync vao form selector neu dang mo
+      // Sync hidden form nick input
       const nzF = document.getElementById('zai-nz-form-sel');
-      if (nzF) {
-        const cur = nzF.value;
-        nzF.innerHTML = '<option value="">— Chọn nick —</option>';
-        _zaloNickList.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; nzF.appendChild(o); });
-        nzF.value = cur || _currentZaloNick || '';
-      }
+      if (nzF) nzF.value = _currentZaloNick || '';
     } catch(e) {}
   }
 
@@ -821,7 +810,6 @@
   document.head.appendChild(style);
 
   function init_wrap() {
-    // Ensure chrome.storage.local is available
     if (typeof chrome === 'undefined' || !chrome.storage) {
       setTimeout(init_wrap, 500);
       return;
@@ -829,14 +817,6 @@
     init();
   }
 
-  // Inject GAS URL helper in page context (for debugging)
-  function injectHelper() {
-    const s = document.createElement('script');
-    s.textContent = '/* OME Zalo AI Helper loaded */';
-    document.head.appendChild(s);
-  }
-
-  // Handle messages from background/popup if needed
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (msg.type === 'LOOKUP') {
@@ -848,14 +828,12 @@
     });
   }
 
-  // Watch for GAS URL input on panel
   document.addEventListener('change', e => {
     if (e.target && e.target.id === 'zai-gas-url') {
       GAS_URL = e.target.value.trim();
     }
   });
 
-  // Check current conversation phone extraction (optional future)
   function extractPhoneFromZalo() {
     const els = document.querySelectorAll('[class*="phone"], [data-phone]');
     for (const el of els) {
@@ -865,7 +843,6 @@
     return null;
   }
 
-  // Auto-fill phone from Zalo contact if available
   function autoFillPhone() {
     const phone = extractPhoneFromZalo();
     if (phone) {
@@ -878,7 +855,6 @@
 
   setInterval(autoFillPhone, 3000);
 
-  // Patch zalo message send to track outgoing messages
   const origFetch = window.fetch;
   window.fetch = function(...args) {
     const result = origFetch.apply(this, args);
@@ -900,28 +876,6 @@
     return result;
   };
 
-  // AI context save after each response
-  const origDoAI = doAI_;
-
-  if (document.readyState==='loading') {
-    document.addEventListener('DOMContentLoaded', init_wrap);
-  } else {
-    init_wrap();
-  }
-
-  // Additional save context to GAS after AI response
-  async function saveAIContext_(phone, history) {
-    if (!GAS_URL || !phone || !history.length) return;
-    try {
-      const sep = GAS_URL.includes('?') ? '&' : '?';
-      await fetch(GAS_URL + sep + 'action=saveAIContext', {
-        method: 'POST', redirect: 'follow',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({phone, history: history.slice(-20)})
-      });
-    } catch(e) {}
-  }
-
   // ── MUTATION OBSERVER for Zalo SPA navigation ──
   let _lastConvId = '';
   const _navObserver = new MutationObserver(() => {
@@ -942,7 +896,6 @@
   });
   _navObserver.observe(document.body, {childList: true, subtree: true});
 
-  function init() { buildPanel(); watchZaloChat(); }
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
-  else init();
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init_wrap);
+  else init_wrap();
 })();
