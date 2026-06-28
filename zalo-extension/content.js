@@ -633,10 +633,18 @@
         '<button class="zai-rem-open" style="background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 7px;cursor:pointer;font-size:10px;">Mở KH</button>' +
         '<button class="zai-rem-done" style="background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 7px;cursor:pointer;font-size:10px;">✓ Done</button>';
       item.querySelector('.zai-rem-open').addEventListener('click', () => {
-        // Copy phone to clipboard
-        navigator.clipboard.writeText(rem.phone).catch(()=>{});
-        // Open appweb with phone param in new tab
-        window.open('https://duyenhoang91tl-lab.github.io/teamduyen/?phone=' + encodeURIComponent(rem.phone), '_blank');
+        // Fill phone + lookup in panel
+        const inp = document.getElementById('zai-phone');
+        if (inp) inp.value = rem.phone;
+        // Show panel if hidden
+        const p = document.getElementById('ome-zai-panel');
+        if (p) p.style.display = '';
+        doLookup_();
+        // Switch to Cập nhật tab after lookup
+        setTimeout(() => {
+          const tabs = document.querySelectorAll('.zai-tab');
+          if (tabs[1]) tabs[1].click();
+        }, 600);
       });
       item.querySelector('.zai-rem-done').addEventListener('click', async (e) => {
         e.currentTarget.disabled = true;
