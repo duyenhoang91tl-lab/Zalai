@@ -1,5 +1,5 @@
-// OME Zalo AI Helper - content script v14.3
-// v14.3: AI section len tren, lich su xuong duoi, an lich su (chi show status), 100 tin, fix emoticon
+// OME Zalo AI Helper - content script v14.4
+// v14.4: them nut Goi Zalo (tu gui), fix date parse, fix emoticon -heart
 (function () {
   'use strict';
 
@@ -535,7 +535,7 @@
       if (!data.ok) throw new Error(data.error||'GAS lỗi');
       const text = (data.text||'').trim();
       sug.innerHTML='';
-      addEl(sug,'div',{className:'zai-section-label',textContent:'💡 Gợi ý — sửa nếu cần rồi copy/lưu'});
+      addEl(sug,'div',{className:'zai-section-label',textContent:'💡 Gợi ý — sửa nếu cần rồi gởi'});
 
       const ta = addEl(sug,'textarea',{id:'zai-sug-edit', rows:4});
       ta.style.cssText='width:100%;box-sizing:border-box;font-size:12px;padding:8px;border:1px solid #d1d5db;border-radius:6px;resize:vertical;margin-top:4px;font-family:inherit';
@@ -543,13 +543,9 @@
 
       const btnRow = addEl(sug,'div',{style:'display:flex;gap:6px;margin-top:6px'});
 
-      const copyBtn = addEl(btnRow,'button',{className:'zai-btn zai-btn-primary zai-btn-sm',textContent:'📋 Copy'});
-      copyBtn.addEventListener('click',()=>{
-        navigator.clipboard.writeText(ta.value).then(()=>{
-          copyBtn.textContent='✓ Đã copy!';
-          setTimeout(()=>{copyBtn.textContent='📋 Copy';},1500);
-        });
-      });
+      const sendZaloBtn = addEl(btnRow,'button',{className:'zai-btn zai-btn-primary zai-btn-sm',textContent:'📤 Gởi Zalo'});
+      sendZaloBtn.title='Tự điền vào ô chat Zalo và gởi ngay';
+      sendZaloBtn.addEventListener('click',() => sendToZalo_(ta.value, sendZaloBtn));
 
       const saveBtn2 = addEl(btnRow,'button',{className:'zai-btn zai-btn-secondary zai-btn-sm',textContent:'💾 Lưu mẫu'});
       saveBtn2.title='Lưu câu trả lời này (sau khi sửa) làm mẫu để AI học';
@@ -557,6 +553,56 @@
 
     } catch(e) { sug.innerHTML=''; showError('Lỗi: '+e.message); }
     finally { btn.disabled=false; btn.textContent=label; }
+  }
+
+  // Gui tin nhan vao o chat Zalo
+  function sendToZalo_(text, btn) {
+    if (!text.trim()) return;
+    const INPUT_SELS = [
+      '[class*="chat-input"] [contenteditable]',
+      '[class*="message-input"] [contenteditable]',
+      '[class*="input-box"] [contenteditable]',
+      '[class*="input-area"] [contenteditable]',
+      '[class*="editor"] [contenteditable]',
+      '[contenteditable="true"]',
+    ];
+    let inputEl = null;
+    for (const sel of INPUT_SELS) {
+      try {
+        const els = [...document.querySelectorAll(sel)];
+        const el = els.find(e => { const r=e.getBoundingClientRect(); return r.height>20&&r.height<300&&r.width>100; });
+        if (el) { inputEl=el; break; }
+      } catch(e) {}
+    }
+    if (!inputEl) {
+      navigator.clipboard.writeText(text).then(()=>{
+        if(btn){btn.textContent='✓ Đã copy (không tìm được ô chat)';setTimeout(()=>{btn.textContent='📤 Gởi Zalo';},2500);}
+      });
+      return;
+    }
+    inputEl.focus();
+    const sel2 = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(inputEl);
+    sel2.removeAllRanges(); sel2.addRange(range);
+    document.execCommand('delete', false);
+    document.execCommand('insertText', false, text);
+    inputEl.dispatchEvent(new InputEvent('input',{bubbles:true,data:text}));
+    setTimeout(()=>{
+      const SEND_SELS = [
+        'button[class*="send"]','[class*="btn-send"]','[class*="sendBtn"]',
+        '[class*="send-btn"]','[class*="icon-send"]',
+      ];
+      let sent=false;
+      for (const s of SEND_SELS) {
+        try { const b=document.querySelector(s); if(b){b.click();sent=true;break;} } catch(e){}
+      }
+      if (!sent) {
+        inputEl.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,which:13,bubbles:true}));
+        inputEl.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,which:13,bubbles:true}));
+      }
+      if(btn){btn.textContent='✓ Đã gởi!';setTimeout(()=>{btn.textContent='📤 Gởi Zalo';},2000);}
+    }, 150);
   }
 
   async function saveAIExample_(prompt, corrected, btn) {
@@ -578,13 +624,17 @@
   // DATE HELPERS
   function parseDate_(d) {
     if (!d) return 0;
-    if (typeof d==='number') return (d-25569)*86400000;
+    if (typeof d==='number') return (d - 25569) * 86400000;
     const s = String(d).trim();
-    const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    // DD/MM/YYYY (dinh dang Viet Nam tu GAS)
+    const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if (m1) return new Date(+m1[3],+m1[2]-1,+m1[1]).getTime();
+    // YYYY-MM-DD (ISO)
     const m2 = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
     if (m2) return new Date(+m2[1],+m2[2]-1,+m2[3]).getTime();
-    return new Date(s).getTime()||0;
+    // GAS Date.toString() fallback
+    const dt = new Date(s);
+    return isNaN(dt) ? 0 : dt.getTime();
   }
   function fmtDate_(d) {
     const ts = parseDate_(d); if (!ts) return '?';
