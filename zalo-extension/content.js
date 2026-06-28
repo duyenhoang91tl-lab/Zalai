@@ -36,11 +36,12 @@
 
     const toggle = document.createElement('button');
     toggle.id = 'ome-zai-toggle'; toggle.title = 'OME Zalo AI'; toggle.textContent = '🤖 AI';
-    toggle.addEventListener('click', togglePanel);
+    toggle.addEventListener('click', e => { e.stopPropagation(); togglePanel(); });
     document.body.appendChild(toggle);
 
     const panel = document.createElement('div');
     panel.id = 'ome-zai-panel';
+    panel.style.display = 'flex';
 
     const hdr = document.createElement('div');
     hdr.className = 'zai-hdr';
@@ -149,11 +150,11 @@
   function togglePanel() {
     const p = document.getElementById('ome-zai-panel');
     if (!p) return;
-    p.style.display = p.style.display === 'none' ? '' : 'none';
+    p.style.display = p.style.display === 'none' ? 'flex' : 'none';
   }
 
   function initPanelEvents() {
-    document.getElementById('zai-close-btn').addEventListener('click', togglePanel);
+    document.getElementById('zai-close-btn').addEventListener('click', e => { e.stopPropagation(); togglePanel(); });
 
     document.querySelectorAll('.zai-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -717,7 +718,7 @@
       background: #fff; border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 12px; display: flex; flex-direction: column;
+      font-size: 12px; flex-direction: column;
     }
     .zai-hdr {
       background: #1e40af; color: #fff; padding: 10px 14px;
