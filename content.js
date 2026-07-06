@@ -30,6 +30,7 @@
   '5. Đang tạm dừng','6. Nhận hộ / Sai số','7. Ngang Cúp','8. Từ chối'
 ];
   let CS_NAMES = ['','duyenht','thaomt','dieptn','vanntt']; // fallback, se load tu GAS
+  let CARE_STATUS_TREE = null; // cay Tinh trang CS load tu GAS (dong bo voi appweb)
 
   // ── BUILD PANEL ──
   function buildPanel() {
@@ -210,7 +211,7 @@
     });
     chrome.storage.local.get(['ome_gas_url','ome_current_cs','ome_current_nz'], (res) => {
       GAS_URL = res.ome_gas_url || '';
-      if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); loadNickZaloList_(); }
+      if (GAS_URL) { inpGas.value = GAS_URL; loadCSNames_(); loadNickZaloList_(); loadCareStatusTree_(); }
       if (!GAS_URL) { _cfgVisible = true; cfg.style.display = 'block'; }
       _currentCS = res.ome_current_cs || '';
       if (_currentCS) {
@@ -286,6 +287,7 @@
     document.getElementById('zai-cfg').style.display = 'none';
     _lookupCache = {};
     loadCSNames_();
+    loadCareStatusTree_();
     if (!key) showMsg('zai-save-status','✓ Đã lưu cài đặt',2000);
   }
 
@@ -967,6 +969,56 @@ async function startReminderPoll_() {
         }
       }
     } catch(e) {}
+  }
+
+  // ── TINH TRANG CS: load cay dong tu GAS (dong bo voi appweb) ──
+  function careStatusOptionsHtml_(tree, selected) {
+    let html = '<option value="">— Chọn —</option>';
+    (tree || []).forEach(function(node) {
+      if (node.children && node.children.length) {
+        html += '<optgroup label="' + escHtml(node.label) + '">';
+        node.children.forEach(function(child) {
+          if (!child.value) return;
+          html += '<option value="' + escHtml(child.value) + '"' + (selected === child.value ? ' selected' : '') + '>' +
+                  escHtml(node.label + ' - ' + (child.label || child.value)) + '</option>';
+        });
+        html += '</optgroup>';
+      } else if (node.value) {
+        html += '<option value="' + escHtml(node.value) + '"' + (selected === node.value ? ' selected' : '') + '>' +
+                escHtml(node.label || node.value) + '</option>';
+      }
+    });
+    return html;
+  }
+
+  function rebuildStatusSel_() {
+    const sel = document.getElementById('zai-status-sel');
+    if (!sel || !Array.isArray(CARE_STATUS_TREE) || !CARE_STATUS_TREE.length) return;
+    const cur = sel.value;
+    sel.innerHTML = careStatusOptionsHtml_(CARE_STATUS_TREE, cur);
+    sel.value = cur;
+  }
+
+  async function loadCareStatusTree_() {
+    if (!GAS_URL) return;
+    const sep = GAS_URL.includes('?') ? '&' : '?';
+    let tree = null;
+    try {
+      const r = await fetch(GAS_URL + sep + 'action=getSetting&key=careStatus', {redirect:'follow'});
+      const d = await r.json();
+      if (d && d.value) { try { tree = typeof d.value === 'string' ? JSON.parse(d.value) : d.value; } catch(e) {} }
+    } catch(e) {}
+    if (!Array.isArray(tree) || !tree.length) {
+      try {
+        const r = await fetch(GAS_URL + sep + 'action=customers', {redirect:'follow'});
+        const d = await r.json();
+        if (d && Array.isArray(d.careStatus) && d.careStatus.length) tree = d.careStatus;
+      } catch(e) {}
+    }
+    if (Array.isArray(tree) && tree.length) {
+      CARE_STATUS_TREE = tree;
+      rebuildStatusSel_();
+    }
   }
 
   function init() { buildPanel(); watchZaloChat(); }
