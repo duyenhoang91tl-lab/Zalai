@@ -54,7 +54,7 @@
     // Config
     const cfg = document.createElement('div');
     cfg.className = 'zai-cfg'; cfg.id = 'zai-cfg'; cfg.style.display = 'none';
-    addEl(cfg, 'label', {textContent:'URL Web App GAS (appweb teamduyen)'});
+    addEl(cfg, 'label', {textContent:'URL Web App GAS (appweb Sasum)'});
     const inpGas = addEl(cfg, 'input', {id:'zai-gas-url', type:'text', placeholder:'https://script.google.com/macros/s/...'});
     addEl(cfg, 'label', {textContent:'🔑 Groq API Key (lưu 1 lần dùng chung cả team)'});
     addEl(cfg, 'input', {id:'zai-gemini-key', type:'text', placeholder:'gsk_... (lấy miễn phí tại console.groq.com)'});
@@ -860,7 +860,7 @@
       openBtn.style.cssText = 'background:#3b82f6;color:#fff;border:none;border-radius:3px;padding:2px 6px;cursor:pointer;font-size:10px;flex-shrink:0;';
       openBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(rem.phone).catch(()=>{});
-        window.open('https://duyenhoang91tl-lab.github.io/teamduyen/?phone=' + encodeURIComponent(rem.phone), '_blank');
+        window.open('https://duyenhoang91tl-lab.github.io/Sasum/?phone=' + encodeURIComponent(rem.phone), '_blank');
       });
       // Done
       const doneBtn = document.createElement('button');
