@@ -2829,6 +2829,7 @@ function openDp(phone) {
   const _hint = document.getElementById('dp-refresh-hint'); if (_hint) _hint.remove();
   const c = allCustomers.find(x=>x.phone===phone);
   if (!c) return;
+  _syncNickZaloListFromGAS().then(function(list){ _nickZaloList = list || []; });
   const initials = c.name.split(' ').map(w=>w[0]||'').slice(-2).join('').toUpperCase();
   txt('dp-av', initials||'?');
   txt('dp-name', c.name);
@@ -3539,7 +3540,25 @@ function _loadNickZaloList() {
 function _saveNickZaloList(list) {
   try { localStorage.setItem('ome_nickzalo_list', JSON.stringify(list)); } catch(e) {}
 }
+async function _syncNickZaloListFromGAS() {
+  try {
+    var r = await fetch(gsUrl + '?action=getSetting&key=nickZaloList', {redirect:'follow'});
+    var data = await r.json();
+    if (data && data.value) {
+      try {
+        var list = JSON.parse(data.value);
+        if (Array.isArray(list)) {
+          _nickZaloList = list;
+          _saveNickZaloList(list);
+          return list;
+        }
+      } catch(e) {}
+    }
+  } catch(e) {}
+  return _loadNickZaloList();
+}
 let _nickZaloList = _loadNickZaloList();
+_syncNickZaloListFromGAS().then(function(list){ _nickZaloList = list || []; });
 
 function _buildNickZaloOptions(selected) {
   return _nickZaloList.map(function(name) {
@@ -3586,36 +3605,40 @@ function removeNickZaloChip(phone, idx) {
 
 // ── Modal quản lý danh sách Nick Zalo ──
 function openNickZaloModal(phone) {
-  // Tạo modal nếu chưa có
-  if (!document.getElementById('nz-modal-overlay')) {
-    var div = document.createElement('div');
-    div.id = 'nz-modal-overlay';
-    div.className = 'nz-modal-overlay';
-    div.innerHTML =
-      '<div class="nz-modal">' +
-        '<div class="nz-modal-hdr">' +
-          '<div class="nz-modal-title">💬 Quản lý danh sách Nick Zalo</div>' +
-          '<button class="close-btn" onclick="closeNickZaloModal()">✕</button>' +
-        '</div>' +
-        '<div class="nz-modal-body">' +
-          '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Tạo danh sách tên Nick Zalo dùng chung. CS chọn nick phù hợp khi chăm sóc từng khách.</div>' +
-          '<div class="nz-add-row">' +
-            '<input class="nz-add-input" id="nz-new-input" placeholder="Nhập tên nick (vd: Zalo 1 Diệp...)" onkeydown="if(event.key===\'Enter\')addNickZaloToList()">' +
-            '<button class="nz-add-confirm" onclick="addNickZaloToList()">+ Thêm</button>' +
+  // Sync danh sách từ GAS trước khi mở modal
+  _syncNickZaloListFromGAS().then(function(list){
+    _nickZaloList = list || [];
+    // Tạo modal nếu chưa có
+    if (!document.getElementById('nz-modal-overlay')) {
+      var div = document.createElement('div');
+      div.id = 'nz-modal-overlay';
+      div.className = 'nz-modal-overlay';
+      div.innerHTML =
+        '<div class="nz-modal">' +
+          '<div class="nz-modal-hdr">' +
+            '<div class="nz-modal-title">💬 Quản lý danh sách Nick Zalo</div>' +
+            '<button class="close-btn" onclick="closeNickZaloModal()">✕</button>' +
           '</div>' +
-          '<div id="nz-list-body"></div>' +
-        '</div>' +
-        '<div class="nz-modal-footer">' +
-          '<button class="btn" onclick="closeNickZaloModal()">Đóng</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(div);
-    div.addEventListener('click', function(e){ if(e.target===div) closeNickZaloModal(); });
-  }
-  _renderNickZaloModalList();
-  document.getElementById('nz-modal-overlay').classList.add('open');
-  // Store current phone for refreshing chips after close
-  document.getElementById('nz-modal-overlay').dataset.phone = phone || '';
+          '<div class="nz-modal-body">' +
+            '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Tạo danh sách tên Nick Zalo dùng chung. CS chọn nick phù hợp khi chăm sóc từng khách.</div>' +
+            '<div class="nz-add-row">' +
+              '<input class="nz-add-input" id="nz-new-input" placeholder="Nhập tên nick (vd: Zalo 1 Diệp...)" onkeydown="if(event.key===\'Enter\')addNickZaloToList()">' +
+              '<button class="nz-add-confirm" onclick="addNickZaloToList()">+ Thêm</button>' +
+            '</div>' +
+            '<div id="nz-list-body"></div>' +
+          '</div>' +
+          '<div class="nz-modal-footer">' +
+            '<button class="btn" onclick="closeNickZaloModal()">Đóng</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(div);
+      div.addEventListener('click', function(e){ if(e.target===div) closeNickZaloModal(); });
+    }
+    _renderNickZaloModalList();
+    document.getElementById('nz-modal-overlay').classList.add('open');
+    // Store current phone for refreshing chips after close
+    document.getElementById('nz-modal-overlay').dataset.phone = phone || '';
+  });
 }
 
 function closeNickZaloModal() {
@@ -3652,6 +3675,11 @@ function addNickZaloToList() {
   if (_nickZaloList.indexOf(val) >= 0) { toast('Nick "' + val + '" đã có trong danh sách'); return; }
   _nickZaloList.push(val);
   _saveNickZaloList(_nickZaloList);
+  // Sync lên GAS
+  fetch(gsUrl, {
+    method: 'post',
+    payload: JSON.stringify({action: 'setSetting', key: 'nickZaloList', value: JSON.stringify(_nickZaloList)})
+  }).catch(function(e){});
   if (inp) inp.value = '';
   _renderNickZaloModalList();
   toast('✓ Đã thêm "' + val + '"');
@@ -3662,6 +3690,11 @@ function deleteNickZaloFromList(idx) {
   if (!confirm('Xóa nick "' + name + '" khỏi danh sách?\n(Các khách đã chọn nick này sẽ không bị ảnh hưởng)')) return;
   _nickZaloList.splice(idx, 1);
   _saveNickZaloList(_nickZaloList);
+  // Sync lên GAS
+  fetch(gsUrl, {
+    method: 'post',
+    payload: JSON.stringify({action: 'setSetting', key: 'nickZaloList', value: JSON.stringify(_nickZaloList)})
+  }).catch(function(e){});
   _renderNickZaloModalList();
   toast('Đã xóa "' + name + '"');
 }
