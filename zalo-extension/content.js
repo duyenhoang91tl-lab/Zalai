@@ -1,4 +1,4 @@
-// OME Zalo AI Helper - content script phien ban 10.22.9.7.2026 (gio.phut.ngay.thang.nam xuat ban)
+// OME Zalo AI Helper - content script phien ban 15.58.9.7.2026 (gio.phut.ngay.thang.nam xuat ban)
 // v15.3: Tu dong cap nhat tinh trang ket ban Zalo ve Sasum khi chay chien dich
 //        (Gui ket ban->Chua ket ban; Da gui/Huy yeu cau->Chua dong y; ten co CTN->Chan;
 //         ten co NHD->Zalo ngung hd; khong thay gi->Da ket ban; trung trang thai cu->bo qua)
