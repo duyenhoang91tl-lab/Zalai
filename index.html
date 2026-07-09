@@ -4808,57 +4808,10 @@ function startReminderChecks(){
   _reminderTimer = setInterval(renderReminderPanel, 60000);   // làm mới mỗi phút
 }
 
-// ── AUTO-SYNC 2 chiều: Zalai ↔ Zalo AI extension qua GAS ──
-var _autoSyncTimer = null;
-var _lastSyncVersion = '';
-var AUTO_SYNC_INTERVAL = 8000; // 8 giây
-function startAutoSync(){
-  if (_autoSyncTimer) clearInterval(_autoSyncTimer);
-  _autoSyncTimer = setInterval(autoSyncFromGAS, AUTO_SYNC_INTERVAL);
-}
-async function autoSyncFromGAS(){
-  if (!gsUrl || !allCustomers || !allCustomers.length) return;
-  try {
-    const sepChar = gsUrl.includes('?') ? '&' : '?';
-    const careUrl = gsUrl + sepChar + 'action=customers&_ts=' + Date.now();
-    const careR = await fetch(careUrl, { redirect: 'follow' });
-    const careJson = await careR.json();
-    if (!careJson || !careJson.rows || !Array.isArray(careJson.rows)) return;
-
-    // Tính checksum dữ liệu để biết có thay đổi không
-    const newVersion = careJson.rows.map(r => r.updated||'').sort().join('|');
-    if (newVersion === _lastSyncVersion) return;
-    _lastSyncVersion = newVersion;
-
-    let updated = 0;
-    for (const row of careJson.rows) {
-      if (!row.phone) continue;
-      const _normPh = normPhone ? normPhone(row.phone) : String(row.phone);
-      // Không ghi đè nếu đang chỉnh sửa hoặc gửi lên GAS
-      if ((_careQueue && _careQueue.has(_normPh)) || (_careWriting && _careWriting.has(_normPh))) continue;
-
-      const existing = careData[_normPh] || {};
-      // Chỉ cập nhật nếu GAS có dữ liệu mới hơn
-      if ((row.updated || '') !== (existing.updated || '')) {
-        careData[_normPh] = {
-          status: row.status||'', zalo: row.zalo||'', cs: row.cs||'', note: row.note||'',
-          schedGoi: row.schedGoi||'', schedGoiNote: row.schedGoiNote||'',
-          schedSP: row.schedSP||'', schedSPNote: row.schedSPNote||'',
-          schedCS: row.schedCS||'', schedCSNote: row.schedCSNote||'',
-          schedHen: row.schedHen||'', schedHenNote: row.schedHenNote||'',
-          updated: row.updated||'',
-          khStatus: row.khStatus||'', nickZalos: row.nickZalos||[], birthday: row.birthday||''
-        };
-        updated++;
-      }
-    }
-
-    if (updated > 0) {
-      saveLS('ome_care', careData);
-      if (typeof applyFilters === 'function') applyFilters(); // refresh UI
-    }
-  } catch(e) { /* bỏ qua lỗi sync */ }
-}
+// ── AUTO-SYNC 2 chiều: Zalai ↔ Zalo AI extension ──
+// Da dung autoSyncLoop() + syncFromGS() (khai bao phia duoi) — kéo đủ birthday,
+// khStatus, nickZalos moi 3 giay va tu refresh panel dang mo. Khong khai bao
+// them _autoSyncTimer o day (trung ten voi khoi duoi -> SyntaxError chet toan app).
 
 // ═══════════════════════════════════════════════════════
 //  UTILS
