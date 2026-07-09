@@ -97,6 +97,9 @@
     const col4 = addEl(row2, 'div', {className:'zai-field-col'});
     addEl(col4, 'label', {textContent:'Ghi chú hẹn'});
     addEl(col4, 'input', {id:'zai-hen-note', type:'text', placeholder:'Hẹn gì...'});
+    const col5 = addEl(row2, 'div', {className:'zai-field-col'});
+    addEl(col5, 'label', {textContent:'🎂 Sinh nhật'});
+    addEl(col5, 'input', {id:'zai-birthday', type:'date'});
 
     // Ghi chú CS
     addEl(upd, 'label', {textContent:'Ghi chú CS'});
@@ -405,6 +408,7 @@
     document.getElementById('zai-cs-sel').value     = care&&care.cs||'';
     document.getElementById('zai-hen-date').value   = care&&care.schedHen ? toInputDate_(care.schedHen) : '';
     document.getElementById('zai-hen-note').value   = care&&care.schedHenNote||'';
+    document.getElementById('zai-birthday').value   = care&&care.birthday||'';
     document.getElementById('zai-note-ta').value    = care&&care.note||'';
   }
 
@@ -417,6 +421,7 @@
     const cs      = document.getElementById('zai-cs-sel').value;
     const henDate = document.getElementById('zai-hen-date').value;
     const henNote = document.getElementById('zai-hen-note').value.trim();
+    const birthday = document.getElementById('zai-birthday') ? document.getElementById('zai-birthday').value : '';
     const note    = document.getElementById('zai-note-ta').value;
     const btn    = document.getElementById('zai-save-btn');
     btn.disabled = true; btn.textContent = 'Đang lưu...';
@@ -428,13 +433,14 @@
         schedules:c.schedules||'', schedGoi:c.schedGoi||'', schedGoiNote:c.schedGoiNote||'',
         schedSP:c.schedSP||'', schedSPNote:c.schedSPNote||'',
         schedCS:c.schedCS||'', schedCSNote:c.schedCSNote||'',
-        schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||''
+        schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||'',
+        birthday: birthday || c.birthday || ''
       };
       const res = await fetch(GAS_URL, {method:'POST', body:JSON.stringify({action:'saveSingle',row}), headers:{'Content-Type':'text/plain'}});
       const d = await res.json();
       if (d.ok) {
         showMsg('zai-save-status','✓ Đã lưu lên GSheet!',3000);
-        if (_custCache) _custCache[_currentCustData.phone] = {...c, status, zalo, cs, note, schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||''};
+        if (_custCache) _custCache[_currentCustData.phone] = {...c, status, zalo, cs, note, schedHen:henDate||c.schedHen||'', schedHenNote:henNote||c.schedHenNote||'', birthday:birthday||c.birthday||''};
       } else { showError('Lỗi: '+JSON.stringify(d)); }
     } catch(e) { showError('Lỗi kết nối: '+e.message); }
     finally { btn.disabled=false; btn.textContent='💾 Lưu về GSheet'; }
